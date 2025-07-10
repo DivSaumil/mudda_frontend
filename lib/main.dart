@@ -1,0 +1,675 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mudda',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          iconTheme: IconThemeData(color: Colors.black),
+        ),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
+          bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+      ),
+      home: const HomePage(),
+    );
+  }
+}
+
+class Post {
+  final String id;
+  final String title;
+  final String content;
+  final String? imageUrl;
+  final int likes;
+  final int comments;
+  final String fullContent;
+
+  Post({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.imageUrl,
+    required this.likes,
+    required this.comments,
+    required this.fullContent,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      imageUrl: json['imageUrl'],
+      likes: json['likes'],
+      comments: json['comments'],
+      fullContent: json['fullContent'] ?? json['content'] * 5, // Generate longer content
+    );
+  }
+}
+
+class PostService {
+  static Future<List<Post>> fetchPosts(int page, {int limit = 10}) async {
+    // simulate network latency
+    await Future.delayed(const Duration(seconds: 1));
+
+    // generate `limit` dummy posts for this page
+    return List.generate(limit, (index) {
+      final id = ((page - 1) * limit + index + 1).toString();
+      return Post(
+        id: id,
+        title: 'Dummy Title #$id',
+        content: 'This is a short excerpt for post #$id.',
+        imageUrl: index % 2 == 0
+            ? 'https://picsum.photos/seed/$id/400/200'
+            : null,
+        likes: (index + 1) * 3,
+        comments: (index + 1) * 2,
+        fullContent: List.filled(20, 'Full content of post #$id.').join(' '),
+      );
+    });
+  }
+}
+
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<Post> _posts = [];
+  int _page = 1;
+  bool _hasMore = true;
+  bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
+  int _selectedCategory = 1;
+  int _currentNavIndex = 0;
+  Post? _selectedPost;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent &&
+        !_isLoading &&
+        _hasMore) {
+      _loadPosts();
+    }
+  }
+
+  Future<void> _loadPosts() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final newPosts = await PostService.fetchPosts(_page);
+      setState(() {
+        _posts.addAll(newPosts);
+        _page++;
+        _hasMore = newPosts.length == 10;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading posts: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _selectedCategory = index;
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _loadPosts();
+    });
+  }
+
+  void _onNavItemTapped(int index) {
+    setState(() => _currentNavIndex = index);
+  }
+
+  void _openPostDetail(Post post) {
+    setState(() => _selectedPost = post);
+    _showDetailPane();
+  }
+
+  void _closeDetailPane() {
+    setState(() => _selectedPost = null);
+  }
+
+  void _showDetailPane() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return PostDetailPane(
+          post: _selectedPost!,
+          onClose: _closeDetailPane,
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: Text('Mudda', style: Theme.of(context).textTheme.titleLarge),
+        actions: [
+          CircleAvatar(
+            radius: 18,
+            backgroundImage: NetworkImage(
+                'https://randomuser.me/api/portraits/men/$_page.jpg'),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      drawer: const AppDrawer(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCategoryBar(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _posts.clear();
+                  _page = 1;
+                  _hasMore = true;
+                });
+                await _loadPosts();
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _posts.length + (_hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index < _posts.length) {
+                    return PostCard(
+                      post: _posts[index],
+                      onTap: _openPostDetail,
+                    );
+                  } else {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _hasMore
+                            ? const CircularProgressIndicator()
+                            : const Text('No more posts'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentNavIndex,
+        onTap: _onNavItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.add_box),
+            label: 'New',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none),
+            label: 'Alerts',
+          ),
+          BottomNavigationBarItem(
+            icon: CircleAvatar(
+              radius: 12,
+              backgroundImage: NetworkImage(
+                  'https://randomuser.me/api/portraits/women/$_page.jpg'),
+            ),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryBar() {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          for (int i = 0; i < 4; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text('Category ${i + 1}'),
+                selected: _selectedCategory == i,
+                onSelected: (_) => _selectTab(i),
+                selectedColor: Colors.blue[100],
+                checkmarkColor: Colors.blue,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class PostCard extends StatelessWidget {
+  final Post post;
+  final Function(Post) onTap;
+
+  const PostCard({super.key, required this.post, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onTap(post),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (post.imageUrl != null) _buildImageSection(),
+            _buildContentSection(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: Image.network(
+        post.imageUrl!,
+        height: 150,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          height: 150,
+          color: Colors.grey[200],
+          child: const Center(child: Icon(Icons.broken_image)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(post.title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(post.content, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(children: [
+                const Icon(Icons.favorite_border, size: 20),
+                const SizedBox(width: 4),
+                Text('${post.likes}'),
+              ]),
+              Row(children: [
+                const Icon(Icons.chat_bubble_outline, size: 20),
+                const SizedBox(width: 4),
+                Text('${post.comments}'),
+              ]),
+              IconButton(
+                icon: const Icon(Icons.more_horiz),
+                onPressed: () => _showCardMenu(context),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCardMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('Share'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmark_border),
+              title: const Text('Save'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Report'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class PostDetailPane extends StatefulWidget {
+  final Post post;
+  final VoidCallback onClose;
+
+  const PostDetailPane({super.key, required this.post, required this.onClose});
+
+  @override
+  State<PostDetailPane> createState() => _PostDetailPaneState();
+}
+
+class _PostDetailPaneState extends State<PostDetailPane> {
+  final ScrollController scrollController = ScrollController();
+  double dragStartPosition = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragStart: (details) {
+        dragStartPosition = details.globalPosition.dy;
+      },
+      onVerticalDragUpdate: (details) {
+        if (details.globalPosition.dy - dragStartPosition > 20) {
+          Navigator.pop(context);
+          widget.onClose();
+        }
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              spreadRadius: 0,
+            )
+          ],
+        ),
+        padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onClose();
+                },
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.post.imageUrl != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          widget.post.imageUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 200,
+                            color: Colors.grey[200],
+                            child: const Center(child: Icon(Icons.broken_image)),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.post.title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.post.fullContent,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        buildActionButton(Icons.favorite_border, '${widget.post.likes}'),
+                        buildActionButton(Icons.chat_bubble_outline, '${widget.post.comments}'),
+                        buildActionButton(Icons.share, 'Share'),
+                        buildActionButton(Icons.bookmark_border, 'Save'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Comments',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (int i = 0; i < 3; i++) buildComment(),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 16,
+                            backgroundImage: NetworkImage(
+                                'https://randomuser.me/api/portraits/men/41.jpg'),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Add a comment...',
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: () {},
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildActionButton(IconData icon, String label) {
+    return Column(
+      children: [
+        Icon(icon, size: 28),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget buildComment() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CircleAvatar(
+            radius: 18,
+            backgroundImage: NetworkImage('https://randomuser.me/api/portraits/women/32.jpg'),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Jane Doe',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'This is a sample comment on the post. It provides additional insight into the topic.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      '2h ago',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Reply',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.favorite_border, size: 18),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppDrawer extends StatelessWidget {
+  const AppDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Colors.blue),
+            child: Text('Mudda Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Profile'),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.help),
+            title: const Text('Help & Support'),
+            onTap: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+}
