@@ -1,13 +1,53 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+
+import 'package:mudda_frontend/LoginPage.dart';
+import 'package:mudda_frontend/CreatePost.dart';
+import 'package:mudda_frontend/ActivityPage.dart';
+import 'package:mudda_frontend/ProfilePage.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider<UserProfileData>(
+      create: (BuildContext context) => UserProfileData(),
+      child: const RootApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class RootApp extends StatefulWidget {
+  const RootApp({super.key});
+
+  @override
+  State<RootApp> createState() => _RootAppState();
+}
+
+class _RootAppState extends State<RootApp> {
+  bool _isLoggedIn = false; // Simulate login state
+
+  @override
+  void initState() {
+    super.initState();
+    // In a real app, you would check authentication status here
+    // For now, we'll navigate to LoginPage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showLoginPage();
+    });
+  }
+
+  void _showLoginPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute<bool>(builder: (context) => const LoginPage()),
+    );
+    if (result == true) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +66,105 @@ class MyApp extends StatelessWidget {
           titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
           bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
+        tabBarTheme: const TabBarThemeData(
+          labelColor: Colors.blue,
+          unselectedLabelColor: Colors.grey,
+        ),
       ),
-      home: const HomePage(),
+      home: _isLoggedIn ? const MainAppScreen() : const Scaffold(body: Center(child: CircularProgressIndicator())), // Show loading while LoginPage is presented
+    );
+  }
+}
+
+class MainAppScreen extends StatefulWidget {
+  const MainAppScreen({super.key});
+
+  @override
+  State<MainAppScreen> createState() => _MainAppScreenState();
+}
+
+class _MainAppScreenState extends State<MainAppScreen> {
+  int _currentNavIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+
+  final List<Widget> _screens = [
+    const HomePage(), // Index 0: Home (from main.dart)
+    const Center(child: Text('Search Page - To be implemented')), // Index 1: Search
+    const CreatePostPage(), // Index 2: New Post
+    const AccountActivityPage(), // Index 3: Alerts
+    const ProfilePage(), // Index 4: Profile
+  ];
+
+  void _onNavItemTapped(int index) {
+    setState(() {
+      _currentNavIndex = index;
+    });
+    // Close drawer if it's open when a nav item is tapped
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: Text('Mudda', style: Theme.of(context).textTheme.titleLarge),
+        actions: [
+          CircleAvatar(
+            radius: 18,
+            backgroundImage: NetworkImage(
+                'https://randomuser.me/api/portraits/men/1.jpg'), // Static image for now
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      drawer: AppDrawer(
+        onProfileTap: () {
+          _onNavItemTapped(4); // Navigate to ProfilePage
+        },
+        onActivityTap: () {
+          _onNavItemTapped(3); // Navigate to ActivityPage
+        },
+      ),
+      body: IndexedStack(
+        index: _currentNavIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentNavIndex,
+        onTap: _onNavItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_box),
+            label: 'New',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none),
+            label: 'Alerts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person), // Changed to person icon for consistency
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 }
@@ -87,7 +224,6 @@ class PostService {
   }
 }
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -102,9 +238,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
   int _selectedCategory = 1;
-  int _currentNavIndex = 0;
   Post? _selectedPost;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   @override
   void initState() {
@@ -159,10 +293,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _onNavItemTapped(int index) {
-    setState(() => _currentNavIndex = index);
-  }
-
   void _openPostDetail(Post post) {
     setState(() => _selectedPost = post);
     _showDetailPane();
@@ -188,25 +318,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: Text('Mudda', style: Theme.of(context).textTheme.titleLarge),
-        actions: [
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage(
-                'https://randomuser.me/api/portraits/men/$_page.jpg'),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      drawer: const AppDrawer(),
-      body: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCategoryBar(),
@@ -245,41 +357,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentNavIndex,
-        onTap: _onNavItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
-            label: 'New',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: 'Alerts',
-          ),
-          BottomNavigationBarItem(
-            icon: CircleAvatar(
-              radius: 12,
-              backgroundImage: NetworkImage(
-                  'https://randomuser.me/api/portraits/women/$_page.jpg'),
-            ),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
+      );
   }
 
   Widget _buildCategoryBar() {
@@ -641,7 +719,10 @@ class _PostDetailPaneState extends State<PostDetailPane> {
 }
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final VoidCallback onProfileTap;
+  final VoidCallback onActivityTap;
+
+  const AppDrawer({super.key, required this.onProfileTap, required this.onActivityTap});
 
   @override
   Widget build(BuildContext context) {
@@ -656,17 +737,28 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text('Profile'),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              onProfileTap();
+              Navigator.pop(context); // Close the drawer
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.local_activity), // Changed icon
+            title: const Text('Account Activity'), // Changed text
+            onTap: () {
+              onActivityTap();
+              Navigator.pop(context); // Close the drawer
+            },
           ),
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
-            onTap: () => Navigator.pop(context),
+            onTap: () => Navigator.pop(context), // Close the drawer
           ),
           ListTile(
             leading: const Icon(Icons.help),
             title: const Text('Help & Support'),
-            onTap: () => Navigator.pop(context),
+            onTap: () => Navigator.pop(context), // Close the drawer
           ),
         ],
       ),
