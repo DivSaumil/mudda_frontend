@@ -17,37 +17,8 @@ void main() {
   );
 }
 
-class RootApp extends StatefulWidget {
+class RootApp extends StatelessWidget {
   const RootApp({super.key});
-
-  @override
-  State<RootApp> createState() => _RootAppState();
-}
-
-class _RootAppState extends State<RootApp> {
-  bool _isLoggedIn = false; // Simulate login state
-
-  @override
-  void initState() {
-    super.initState();
-    // In a real app, you would check authentication status here
-    // For now, we'll navigate to LoginPage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showLoginPage();
-    });
-  }
-
-  void _showLoginPage() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute<bool>(builder: (context) => const LoginPage()),
-    );
-    if (result == true) {
-      setState(() {
-        _isLoggedIn = true;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +42,52 @@ class _RootAppState extends State<RootApp> {
           unselectedLabelColor: Colors.grey,
         ),
       ),
-      home: _isLoggedIn ? const MainAppScreen() : const Scaffold(body: Center(child: CircularProgressIndicator())), // Show loading while LoginPage is presented
+      home: const AuthGate(),
     );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  // Set to false to enable the login flow.
+  bool _isLoggedIn = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // For development, we can bypass the login screen.
+    // To enable login, set _isLoggedIn to false.
+    if (!_isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showLoginPage();
+      });
+    }
+  }
+
+  void _showLoginPage() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+    if (result == true && mounted) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Show loading indicator until login flow is complete, then show the main app.
+    return _isLoggedIn
+        ? const MainAppScreen()
+        : const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
@@ -99,10 +114,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
     setState(() {
       _currentNavIndex = index;
     });
-    // Close drawer if it's open when a nav item is tapped
-    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context);
-    }
   }
 
   @override
@@ -127,9 +138,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
       drawer: AppDrawer(
         onProfileTap: () {
           _onNavItemTapped(4); // Navigate to ProfilePage
+          Navigator.pop(context); // Close the drawer
         },
         onActivityTap: () {
           _onNavItemTapped(3); // Navigate to ActivityPage
+          Navigator.pop(context); // Close the drawer
         },
       ),
       body: IndexedStack(
@@ -738,16 +751,14 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.person),
             title: const Text('Profile'),
             onTap: () {
-              onProfileTap();
-              Navigator.pop(context); // Close the drawer
+              onProfileTap(); // The callback now handles closing the drawer
             },
           ),
           ListTile(
             leading: const Icon(Icons.local_activity), // Changed icon
             title: const Text('Account Activity'), // Changed text
             onTap: () {
-              onActivityTap();
-              Navigator.pop(context); // Close the drawer
+              onActivityTap(); // The callback now handles closing the drawer
             },
           ),
           ListTile(
