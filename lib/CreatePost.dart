@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
-class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({Key? key}) : super(key: key);
+class CreateIssuePage extends StatefulWidget {
+  const CreateIssuePage({Key? key}) : super(key: key);
 
   @override
-  State<CreatePostPage> createState() => _CreatePostPageState();
+  State<CreateIssuePage> createState() => _CreateIssuePageState();
 }
 
-class _CreatePostPageState extends State<CreatePostPage> {
+class _CreateIssuePageState extends State<CreateIssuePage> {
   final TextEditingController _headlineController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _tagInputController = TextEditingController();
+  // Removed tag input controller (hashtags feature removed)
 
   bool _hasContent = false;
   List<String> _attachedImages = <String>[];
-  List<String> _tags = <String>[];
+  // Removed tags list (hashtags feature removed)
   String? _selectedCategory;
 
   final List<String> _availableCategories = <String>[
@@ -41,7 +41,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   void dispose() {
     _headlineController.dispose();
     _contentController.dispose();
-    _tagInputController.dispose();
+  // _tagInputController.dispose();
     super.dispose();
   }
 
@@ -50,7 +50,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       _hasContent = _headlineController.text.trim().isNotEmpty ||
           _contentController.text.trim().isNotEmpty ||
           _attachedImages.isNotEmpty ||
-          _tags.isNotEmpty ||
+          // _tags.isNotEmpty ||
           _selectedCategory != null;
     });
   }
@@ -62,7 +62,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (headline.isNotEmpty ||
         content.isNotEmpty ||
         _attachedImages.isNotEmpty ||
-        _tags.isNotEmpty ||
+  // _tags.isNotEmpty ||
         _selectedCategory != null) {
       final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
       if (headline.isNotEmpty) {
@@ -74,9 +74,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       if (_attachedImages.isNotEmpty) {
         snackBarMessage.write('Images: ${_attachedImages.length}\n');
       }
-      if (_tags.isNotEmpty) {
-        snackBarMessage.write('Tags: ${_tags.join(', ')}\n');
-      }
+  // Removed tags from snackbar
       if (_selectedCategory != null) {
         snackBarMessage.write('Category: $_selectedCategory\n');
       }
@@ -102,34 +100,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
   }
 
-  void _addTag(String tag) {
-    final String trimmedTag = tag.trim();
-    if (trimmedTag.isNotEmpty && !_tags.contains(trimmedTag)) {
-      setState(() {
-        _tags.add(trimmedTag);
-        _tagInputController.clear();
-        _updateContentStatus();
-      });
-    }
-  }
-
-  void _removeTag(String tag) {
-    setState(() {
-      _tags.remove(tag);
-      _updateContentStatus();
-    });
-  }
+  // Removed tag add/remove methods
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Post'),
+  title: const Text('Create Issue'),
         actions: <Widget>[
           TextButton(
             onPressed: _hasContent ? _handlePost : null,
             child: Text(
-              'Post',
+              'Submit',
               style: TextStyle(
                 color: _hasContent ? Theme.of(context).primaryColor : Colors.grey,
                 fontWeight: FontWeight.bold,
@@ -172,7 +154,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     maxLines: null,
                     autofocus: true,
                     decoration: const InputDecoration(
-                      hintText: "What's happening?",
+                      hintText: "Description",
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -225,39 +207,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 ],
               ),
 
-            // Tags Input and Display
-            TextField(
-              controller: _tagInputController,
-              decoration: InputDecoration(
-                hintText: "Add tags (e.g., #flutter #ui)",
-                prefixIcon: const Icon(Icons.tag),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.grey[200],
-                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-              onSubmitted: (String value) => _addTag(value),
-              textInputAction: TextInputAction.done,
-            ),
-            if (_tags.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: _tags.map<Widget>((String tag) {
-                  return Chip(
-                    label: Text(tag),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () => _removeTag(tag),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  );
-                }).toList(),
-              ),
-            ],
+            // Tags input and display removed
             const SizedBox(height: 16),
 
             // Category Selection
@@ -313,12 +263,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 },
                 tooltip: 'Add Emoji',
               ),
-              IconButton(
-                icon: const Icon(Icons.location_on),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.location_on, color: Colors.white),
+                label: const Text('Add Location', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 onPressed: () {
                   // TODO: Implement location functionality
                 },
-                tooltip: 'Add Location',
               ),
               const Spacer(),
               IconButton(

@@ -24,8 +24,8 @@ class UserProfile {
   });
 }
 
-/// Data model representing a single post.
-class Post {
+/// Data model representing a single issue (formerly post).
+class Issue {
   final String authorName;
   final String authorAvatarUrl;
   final String content;
@@ -34,7 +34,7 @@ class Post {
   final int retweets;
   final int likes;
 
-  const Post({
+  const Issue({
     required this.authorName,
     required this.authorAvatarUrl,
     required this.content,
@@ -66,19 +66,19 @@ class UserProfileData extends ChangeNotifier {
     followersCount: 1200,
   );
 
-  // Initial dummy posts
-  final List<Post> _posts;
+  // Initial dummy issues
+  final List<Issue> _issues;
 
   // Initial dummy media items
   final List<MediaItem> _media;
 
   UserProfileData()
-      : _posts = List<Post>.generate(
+      : _issues = List<Issue>.generate(
     10,
-        (int index) => Post(
+        (int index) => Issue(
       authorName: 'John Doe',
       authorAvatarUrl: 'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-      content: 'This is post #${index + 1} from John Doe. Loving Flutter development!',
+      content: 'This is issue #${index + 1} from John Doe. Loving Flutter development!',
       timeAgo: '${(index + 1) * 2}h',
       replies: 5 + index,
       retweets: 10 + index,
@@ -93,7 +93,7 @@ class UserProfileData extends ChangeNotifier {
         );
 
   UserProfile get userProfile => _userProfile;
-  List<Post> get posts => _posts;
+  List<Issue> get issues => _issues;
   List<MediaItem> get media => _media;
 
 // Add methods to modify data and call notifyListeners() if reactivity is needed later.
@@ -113,7 +113,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+  _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
@@ -127,10 +127,9 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     // Access profile data using Provider
     final UserProfileData profileData = context.watch<UserProfileData>();
     final UserProfile userProfile = profileData.userProfile;
-    final List<Post> posts = profileData.posts;
-    final List<MediaItem> mediaItems = profileData.media;
+  final List<Issue> issues = profileData.issues;
 
-    final double appBarBottomHeight = kTextTabBarHeight; // Height of the TabBar
+  final double appBarBottomHeight = kTextTabBarHeight; // Height of the TabBar
 
     return Scaffold(
       body: NestedScrollView(
@@ -158,8 +157,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                   labelColor: Theme.of(context).tabBarTheme.labelColor,
                   unselectedLabelColor: Theme.of(context).tabBarTheme.unselectedLabelColor,
                   tabs: const <Tab>[
-                    Tab(text: 'Posts'),
-                    Tab(text: 'Media'),
+                    Tab(text: 'Issues'),
                   ],
                 ),
               ),
@@ -169,8 +167,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         body: TabBarView(
           controller: _tabController,
           children: <Widget>[
-            PostList(posts: posts),
-            MediaGrid(mediaItems: mediaItems),
+            IssueList(issues: issues),
           ],
         ),
       ),
@@ -251,55 +248,82 @@ class ProfileHeader extends StatelessWidget {
   }
 }
 
-/// Displays a scrollable list of posts.
-class PostList extends StatelessWidget {
-  final List<Post> posts;
+/// Displays a scrollable list of issues.
+class IssueList extends StatelessWidget {
+  final List<Issue> issues;
 
-  const PostList({Key? key, required this.posts}) : super(key: key);
+  const IssueList({Key? key, required this.issues}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: posts.length,
+      itemCount: issues.length,
       separatorBuilder: (BuildContext context, int index) => const Divider(),
       itemBuilder: (BuildContext context, int index) {
-        final Post post = posts[index];
-        return ListTile(
-          leading: CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(post.authorAvatarUrl),
-          ),
-          title: Text(post.authorName),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(height: 4),
-              Text(post.content, style: const TextStyle(height: 1.4)),
-              const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  Text(post.timeAgo, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.chat_bubble_outline, size: 16),
-                  const SizedBox(width: 4),
-                  Text(post.replies.toString(), style: const TextStyle(fontSize: 12)),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.repeat, size: 16),
-                  const SizedBox(width: 4),
-                  Text(post.retweets.toString(), style: const TextStyle(fontSize: 12)),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.favorite_border, size: 16),
-                  const SizedBox(width: 4),
-                  Text(post.likes.toString(), style: const TextStyle(fontSize: 12)),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.share, size: 16),
-                ],
+        final Issue issue = issues[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundImage: NetworkImage(issue.authorAvatarUrl),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              issue.authorName,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_horiz),
+                          onSelected: (String value) {
+                            // TODO: Implement report/flag logic
+                          },
+                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'report',
+                              child: ListTile(
+                                leading: Icon(Icons.flag),
+                                title: Text('Report/Flag'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(issue.content, style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: <Widget>[
+                        // Comment button removed (already have comment box)
+                        const SizedBox(width: 16),
+                        const Icon(Icons.repeat, size: 16),
+                        const SizedBox(width: 4),
+                        Text(issue.retweets.toString(), style: const TextStyle(fontSize: 12)),
+                        const SizedBox(width: 16),
+                        const Icon(Icons.emoji_symbols, size: 16), // Raised Fist alternative
+                        const SizedBox(width: 4),
+                        Text(issue.likes.toString(), style: const TextStyle(fontSize: 12)),
+                        const SizedBox(width: 16),
+                        const Icon(Icons.share, size: 16),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          isThreeLine: true,
-        );
+            );
       },
     );
   }

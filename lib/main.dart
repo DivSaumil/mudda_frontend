@@ -105,7 +105,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   final List<Widget> _screens = [
     const HomePage(), // Index 0: Home (from main.dart)
     const Center(child: Text('Search Page - To be implemented')), // Index 1: Search
-    const CreatePostPage(), // Index 2: New Post
+    const CreateIssuePage(), // Index 2: New Post
     const AccountActivityPage(), // Index 3: Alerts
     const ProfilePage(), // Index 4: Profile
   ];
@@ -453,7 +453,7 @@ class PostCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(children: [
-                const Icon(Icons.favorite_border, size: 20),
+                const Icon(Icons.pan_tool, size: 20),
                 const SizedBox(width: 4),
                 Text('${post.likes}'),
               ]),
@@ -606,8 +606,7 @@ class _PostDetailPaneState extends State<PostDetailPane> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        buildActionButton(Icons.favorite_border, '${widget.post.likes}'),
-                        buildActionButton(Icons.chat_bubble_outline, '${widget.post.comments}'),
+                        buildActionButton(Icons.pan_tool, '${widget.post.likes}'), // Updated to raised fist icon
                         buildActionButton(Icons.share, 'Share'),
                         buildActionButton(Icons.bookmark_border, 'Save'),
                       ],
@@ -722,7 +721,7 @@ class _PostDetailPaneState extends State<PostDetailPane> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.favorite_border, size: 18),
+            icon: const Icon(Icons.pan_tool, size: 18), // Raised Fist alternative
             onPressed: () {},
           ),
         ],
