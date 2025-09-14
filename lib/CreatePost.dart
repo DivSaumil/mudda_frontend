@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/issue_model.dart';
+import '../repositories/issue_repository.dart';
 
 class CreateIssuePage extends StatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);
@@ -17,18 +19,18 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
   // Removed tags list (hashtags feature removed)
   String? _selectedCategory;
 
-  final List<String> _availableCategories = <String>[
-    'Sanitation',
-    'Electricity',
-    'Water',
-    'Road',
-    'Infra',
-    'Corruption',
-    'Municipality',
-    'Administrative',
-    'Education',
-    'Other',
-  ];
+  final Map<String, int> _categoryMap = {
+  'Sanitation': 1,
+  'Electricity': 2,
+  'Water': 3,
+  'Road': 4,
+  'Infra': 5,
+  'Corruption': 6,
+  'Municipality': 7,
+  'Administrative': 8,
+  'Education': 9,
+  'Other': 10,
+};
 
   @override
   void initState() {
@@ -55,34 +57,65 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
     });
   }
 
-  void _handlePost() {
+  void _handlePost() async{
+
     final String headline = _headlineController.text.trim();
     final String content = _contentController.text.trim();
 
-    if (headline.isNotEmpty ||
-        content.isNotEmpty ||
-        _attachedImages.isNotEmpty ||
-  // _tags.isNotEmpty ||
-        _selectedCategory != null) {
-      final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
-      if (headline.isNotEmpty) {
-        snackBarMessage.write('Headline: $headline\n');
-      }
-      if (content.isNotEmpty) {
-        snackBarMessage.write('Content: $content\n');
-      }
-      if (_attachedImages.isNotEmpty) {
-        snackBarMessage.write('Images: ${_attachedImages.length}\n');
-      }
-  // Removed tags from snackbar
-      if (_selectedCategory != null) {
-        snackBarMessage.write('Category: $_selectedCategory\n');
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(snackBarMessage.toString())),
+    if (_hasContent) {
+      // Build Issue object
+      Issue issue = Issue(
+        title: headline,
+        description: content,
+        reporterId: 1, // TODO: replace with logged-in user ID
+        locationId: 101, // TODO: integrate real location
+        categoryId: _selectedCategory != null ? _categoryMap[_selectedCategory!] ?? 0 : 0,
+        mediaUrls: _attachedImages,
       );
+
+      final IssueRepository _repository = IssueRepository();
+      bool success = await _repository.addIssue(issue);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Issue created successfully")),
+        );
+        Navigator.pop(context); // close the page
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("❌ Failed to create issue")),
+        );
+      }
     }
+
+
+  //   final String headline = _headlineController.text.trim();
+  //   final String content = _contentController.text.trim();
+
+  //   if (headline.isNotEmpty ||
+  //       content.isNotEmpty ||
+  //       _attachedImages.isNotEmpty ||
+  // // _tags.isNotEmpty ||
+  //       _selectedCategory != null) {
+  //     final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
+  //     if (headline.isNotEmpty) {
+  //       snackBarMessage.write('Headline: $headline\n');
+  //     }
+  //     if (content.isNotEmpty) {
+  //       snackBarMessage.write('Content: $content\n');
+  //     }
+  //     if (_attachedImages.isNotEmpty) {
+  //       snackBarMessage.write('Images: ${_attachedImages.length}\n');
+  //     }
+  // // Removed tags from snackbar
+  //     if (_selectedCategory != null) {
+  //       snackBarMessage.write('Category: $_selectedCategory\n');
+  //     }
+
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(snackBarMessage.toString())),
+  //     );
+  //   }
   }
 
   void _addImage() {
@@ -233,7 +266,7 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
                       _updateContentStatus();
                     });
                   },
-                  items: _availableCategories
+                  items: _categoryMap.keys
                       .map<DropdownMenuItem<String>>((String category) {
                     return DropdownMenuItem<String>(
                       value: category,
