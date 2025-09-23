@@ -1,5 +1,5 @@
 import '../models/issue_model.dart';
-import '../services/api_service.dart';
+import '../services/issue_service.dart';
 
 class IssueRepository {
   final ApiService apiService = ApiService();
