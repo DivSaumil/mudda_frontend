@@ -7,6 +7,7 @@ import 'package:mudda_frontend/LoginPage.dart';
 import 'package:mudda_frontend/CreatePost.dart';
 import 'package:mudda_frontend/ActivityPage.dart';
 import 'package:mudda_frontend/ProfilePage.dart';
+import 'package:mudda_frontend/DashboardPage.dart'; // Added Import
 
 void main() {
   runApp(
@@ -116,6 +117,16 @@ class _MainAppScreenState extends State<MainAppScreen> {
     });
   }
 
+  void _openDashboard() {
+    // Close the drawer first
+    Navigator.pop(context);
+    // Navigate to the Dashboard Page
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DashboardPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,13 +148,14 @@ class _MainAppScreenState extends State<MainAppScreen> {
       ),
       drawer: AppDrawer(
         onProfileTap: () {
-          _onNavItemTapped(4); // Navigate to ProfilePage
           Navigator.pop(context); // Close the drawer
+          _onNavItemTapped(4); // Navigate to ProfilePage
         },
         onActivityTap: () {
-          _onNavItemTapped(3); // Navigate to ActivityPage
           Navigator.pop(context); // Close the drawer
+          _onNavItemTapped(3); // Navigate to ActivityPage
         },
+        onDashboardTap: _openDashboard, // Pass the dashboard callback
       ),
       body: IndexedStack(
         index: _currentNavIndex,
@@ -173,7 +185,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
             label: 'Alerts',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person), // Changed to person icon for consistency
+            icon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -332,45 +344,45 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCategoryBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  _posts.clear();
-                  _page = 1;
-                  _hasMore = true;
-                });
-                await _loadPosts();
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCategoryBar(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _posts.clear();
+                _page = 1;
+                _hasMore = true;
+              });
+              await _loadPosts();
+            },
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: _posts.length + (_hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < _posts.length) {
+                  return PostCard(
+                    post: _posts[index],
+                    onTap: _openPostDetail,
+                  );
+                } else {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _hasMore
+                          ? const CircularProgressIndicator()
+                          : const Text('No more posts'),
+                    ),
+                  );
+                }
               },
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _posts.length + (_hasMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index < _posts.length) {
-                    return PostCard(
-                      post: _posts[index],
-                      onTap: _openPostDetail,
-                    );
-                  } else {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: _hasMore
-                            ? const CircularProgressIndicator()
-                            : const Text('No more posts'),
-                      ),
-                    );
-                  }
-                },
-              ),
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Widget _buildCategoryBar() {
@@ -733,8 +745,14 @@ class _PostDetailPaneState extends State<PostDetailPane> {
 class AppDrawer extends StatelessWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onActivityTap;
+  final VoidCallback onDashboardTap; // Added callback for dashboard
 
-  const AppDrawer({super.key, required this.onProfileTap, required this.onActivityTap});
+  const AppDrawer({
+    super.key,
+    required this.onProfileTap,
+    required this.onActivityTap,
+    required this.onDashboardTap, // Required in constructor
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -746,19 +764,22 @@ class AppDrawer extends StatelessWidget {
             decoration: BoxDecoration(color: Colors.blue),
             child: Text('Mudda Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
           ),
+          // New Dashboard Item
+          ListTile(
+            leading: const Icon(Icons.dashboard),
+            title: const Text('Community Dashboard'),
+            onTap: onDashboardTap,
+          ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text('Profile'),
-            onTap: () {
-              onProfileTap(); // The callback now handles closing the drawer
-            },
+            onTap: onProfileTap,
           ),
           ListTile(
-            leading: const Icon(Icons.local_activity), // Changed icon
-            title: const Text('Account Activity'), // Changed text
-            onTap: () {
-              onActivityTap(); // The callback now handles closing the drawer
-            },
+            leading: const Icon(Icons.local_activity),
+            title: const Text('Account Activity'),
+            onTap: onActivityTap,
           ),
           ListTile(
             leading: const Icon(Icons.settings),
