@@ -1,41 +1,111 @@
-class Issue{
+class IssueResponse {
+  final int id;
   final String title;
-  final String description;
-  final int reporterId;
-  final int locationId;
-  final int categoryId;
-  final List<String> mediaUrls;
+  final String content;
+  final String? imageUrl;
+  final int likes;
+  final int comments;
+  final String fullContent;
 
-  Issue({
+  IssueResponse({
+    required this.id,
     required this.title,
-    required this.description,
-    required this.reporterId,
-    required this.locationId,
-    required this.categoryId,
-    required this.mediaUrls,
+    required this.content,
+    this.imageUrl,
+    required this.likes,
+    required this.comments,
+    required this.fullContent,
   });
 
-  // Convert JSON to Dart object
-  factory Issue.fromJson(Map<String, dynamic> json) {
-    return Issue(
+  factory IssueResponse.fromJson(Map<String, dynamic> json) {
+    return IssueResponse(
+      id: json['id'],
       title: json['title'],
-      description: json['description'],
-      reporterId: json['reporter_id'],
-      locationId: json['location_id'],
-      categoryId: json['category_id'],
-      mediaUrls: List<String>.from(json['media_urls']),
+      content: json['content'],
+      imageUrl: json['imageUrl'],
+      likes: json['likes'] ?? 0,
+      comments: json['comments'] ?? 0,
+      fullContent: json['fullContent'] ?? json['content'],
     );
   }
 
-  //Convert Dart object to json
   Map<String, dynamic> toJson() {
     return {
-      "title": title,
-      "description": description,
-      "reporter_id": reporterId,
-      "location_id": locationId,
-      "category_id": categoryId,
-      "media_urls": mediaUrls,
+      'id': id,
+      'title': title,
+      'content': content,
+      'imageUrl': imageUrl,
+      'likes': likes,
+      'comments': comments,
+      'fullContent': fullContent,
     };
+  }
+}
+
+class CreateIssueRequest {
+  final String title;
+  final String content;
+  final String? imageUrl;
+
+  CreateIssueRequest({required this.title, required this.content, this.imageUrl});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'content': content,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+    };
+  }
+}
+
+class UpdateIssueRequest {
+  final String? title;
+  final String? content;
+  final String? imageUrl;
+
+  UpdateIssueRequest({this.title, this.content, this.imageUrl});
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+    };
+  }
+}
+
+class IssueFilterRequest {
+  final String? status;
+  final String? severity;
+
+  IssueFilterRequest({this.status, this.severity});
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (status != null) 'status': status,
+      if (severity != null) 'severity': severity,
+    };
+  }
+}
+
+class PageIssueSummaryResponse {
+  final List<IssueResponse> issues;
+  final int totalPages;
+  final int totalElements;
+
+  PageIssueSummaryResponse({
+    required this.issues,
+    required this.totalPages,
+    required this.totalElements,
+  });
+
+  factory PageIssueSummaryResponse.fromJson(Map<String, dynamic> json) {
+    return PageIssueSummaryResponse(
+      issues: (json['content'] as List)
+          .map((i) => IssueResponse.fromJson(i))
+          .toList(),
+      totalPages: json['totalPages'] ?? 1,
+      totalElements: json['totalElements'] ?? (json['content']?.length ?? 0),
+    );
   }
 }

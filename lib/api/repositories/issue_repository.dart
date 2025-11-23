@@ -1,9 +1,31 @@
-import '../models/issue_model.dart';
+import '../models/issue_models.dart';
 import '../services/issue_service.dart';
 
 class IssueRepository {
-  final ApiService apiService = ApiService();
+  final IssueService service;
 
-  Future<List<Issue>> getAllIssues() => apiService.fetchIssues();
-  Future<bool> addIssue(Issue issue) => apiService.createIssue(issue);
+  IssueRepository({required this.service});
+
+  Future<List<IssueResponse>> fetchIssues(
+      {IssueFilterRequest? filter, int page = 1, int size = 20}) async {
+    final pageData =
+        await service.getAllIssues(filter: filter, page: page, size: size);
+    return pageData.issues;
+  }
+
+  Future<IssueResponse> getIssue(int id) async {
+    return await service.getIssueById(id);
+  }
+
+  Future<IssueResponse> createIssue(CreateIssueRequest request) async {
+    return await service.createIssue(request);
+  }
+
+  Future<IssueResponse> updateIssue(int id, UpdateIssueRequest request) async {
+    return await service.updateIssue(id, request);
+  }
+
+  Future<void> deleteIssue(int id) async {
+    return await service.deleteIssue(id);
+  }
 }
