@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import 'package:mudda_frontend/LoginPage.dart';
-import 'package:mudda_frontend/CreatePost.dart';
-import 'package:mudda_frontend/ActivityPage.dart';
-import 'package:mudda_frontend/ProfilePage.dart';
-import 'package:mudda_frontend/DashboardPage.dart'; // Added Import
+import 'package:mudda_frontend/pages/LoginPage.dart';
+import 'package:mudda_frontend/pages/CreatePost.dart';
+import 'package:mudda_frontend/pages/ActivityPage.dart';
+import 'package:mudda_frontend/pages/ProfilePage.dart';
+import 'package:mudda_frontend/pages/DashboardPage.dart'; // Added Import
 
 void main() {
   runApp(
