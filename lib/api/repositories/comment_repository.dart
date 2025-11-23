@@ -1,4 +1,4 @@
-import '../models/comment_model.dart';
+import 'package:mudda_frontend/api/models/comment_models.dart';
 import '../services/comment_service.dart';
 
 class CommentRepository {

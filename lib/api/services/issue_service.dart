@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/constants.dart';
-import '../models/issue_model.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
 
 class ApiService{
   final String baseUrl= AppConstants.baseUrl;
