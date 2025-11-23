@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/comment_models.dart';
+import '../config/constants.dart';
+import 'package:mudda_frontend/api/models/comment_models.dart';
 
 class CommentService {
   final String baseUrl;

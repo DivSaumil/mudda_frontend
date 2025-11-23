@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../api/models/issue_models.dart';
-import '../api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
+import 'package:mudda_frontend/api/repositories/issue_repository.dart';
 
 class CreateIssuePage extends StatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);

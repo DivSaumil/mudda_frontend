@@ -1,5 +1,5 @@
-import '../models/issue_models.dart';
-import '../services/issue_service.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
 
 class IssueRepository {
   final IssueService service;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/issue_models.dart';
+import '../config/constants.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
 
 class IssueService {
   final String baseUrl;

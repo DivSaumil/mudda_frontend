@@ -16,9 +16,6 @@ class _DashboardPageState extends State<DashboardPage> {
   double _currentZoom = 13.0;
   final MapController _mapController = MapController();
 
-  // Changed viewportFraction to 0.85 for a wider peek at the next card
-  final PageController _pageController = PageController(viewportFraction: 0.85);
-
   // Mock Data for Analytics
   final int _totalIssues = 1240;
   final int _solvedIssues = 892;
@@ -92,6 +89,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Width calculation to ensure a peek of the next card
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double cardWidth = screenWidth - 40; // Leaves 20px padding on each side roughly
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -117,36 +118,36 @@ class _DashboardPageState extends State<DashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            // 1. Swipable Flashcards Section
+            // 1. Swipable Flashcards Section (ListView with Snapping)
             SizedBox(
               height: 240,
-              child: PageView(
-                controller: _pageController,
-                physics: const BouncingScrollPhysics(),
-                // padEnds: false ALIGNS the first card to the left,
-                // revealing the second card on the right.
-                padEnds: false,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const PageScrollPhysics(), // Enables the snapping effect
+                padding: const EdgeInsets.symmetric(horizontal: 16), // Padding for the list start/end
                 children: [
                   // Card 1: Resolution Rate
-                  // Added Padding to the builder so the first card isn't stuck to the edge
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 8.0),
+                  Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 12), // Space between cards
                     child: _buildAnalyticsCard(
                       child: _buildResolutionRate(),
                     ),
                   ),
 
                   // Card 2: Top Issues
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 12),
                     child: _buildAnalyticsCard(
                       child: _buildTopCategories(),
                     ),
                   ),
 
                   // Card 3: Quick Stats
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0, right: 16.0),
+                  Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 4), // Last item needs less margin
                     child: _buildAnalyticsCard(
                       color: Colors.blue.shade600,
                       child: _buildQuickStat(
@@ -240,7 +241,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   const Text(
                     "Live Issue Map",
                     style: TextStyle(
-                      fontSize: 18, // Slightly larger
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -374,7 +375,7 @@ class _DashboardPageState extends State<DashboardPage> {
               Text(
                 "${(percentage * 100).toInt()}%",
                 style: const TextStyle(
-                  fontSize: 36, // Larger font
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),

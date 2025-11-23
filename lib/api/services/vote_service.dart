@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/vote_models.dart';
+import '../config/constants.dart';
+import 'package:mudda_frontend/api/models/vote_models.dart';
 
 class VoteService {
   final String baseUrl;
