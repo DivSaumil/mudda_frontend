@@ -47,7 +47,11 @@ class CreateIssueRequest {
   final String content;
   final String? imageUrl;
 
-  CreateIssueRequest({required this.title, required this.content, this.imageUrl});
+  CreateIssueRequest({
+    required this.title,
+    required this.content,
+    this.imageUrl,
+  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -88,6 +92,36 @@ class IssueFilterRequest {
   }
 }
 
+/// -------- Issue Cluster Models -------
+
+class IssueClusterRequest {
+  final int numberOfClusters;
+
+  IssueClusterRequest({required this.numberOfClusters});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'numberOfClusters': numberOfClusters,
+    };
+  }
+}
+
+class IssueClusterResponse {
+  final List<IssueResponse> clusteredIssues;
+
+  IssueClusterResponse({required this.clusteredIssues});
+
+  factory IssueClusterResponse.fromJson(Map<String, dynamic> json) {
+    return IssueClusterResponse(
+      clusteredIssues: (json['issues'] as List)
+          .map((i) => IssueResponse.fromJson(i))
+          .toList(),
+    );
+  }
+}
+
+/// -------- Paginated Issue Summary -------
+
 class PageIssueSummaryResponse {
   final List<IssueResponse> issues;
   final int totalPages;
@@ -105,7 +139,7 @@ class PageIssueSummaryResponse {
           .map((i) => IssueResponse.fromJson(i))
           .toList(),
       totalPages: json['totalPages'] ?? 1,
-      totalElements: json['totalElements'] ?? (json['content']?.length ?? 0),
+      totalElements: json['totalElements'] ?? 0,
     );
   }
 }

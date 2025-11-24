@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/constants.dart';
-import 'package:mudda_frontend/api/models/issue_models.dart';
+import '../models/issue_models.dart';
 
 class IssueService {
   final String baseUrl;
@@ -27,7 +26,7 @@ class IssueService {
       body: jsonEncode(request.toJson()),
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       return IssueResponse.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to create issue: ${response.body}');
@@ -58,31 +57,50 @@ class IssueService {
     }
   }
 
-  Future<PageIssueSummaryResponse> getAllIssues(
-      {IssueFilterRequest? filter,
-      int page = 1,
-      int size = 20,
-      String sortBy = 'CREATED_AT',
-      String sortOrder = 'desc'}) async {
+  Future<PageIssueSummaryResponse> getAllIssues({
+    IssueFilterRequest? filter,
+    int page = 0,
+    int size = 20,
+    String sortBy = 'CREATED_AT',
+    String sortOrder = 'desc',
+  }) async {
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
       'sortBy': sortBy,
       'sortOrder': sortOrder,
     };
+
     if (filter != null) {
-      filter.toJson().forEach((key, value) {
-        if (value != null) queryParams[key] = value.toString();
-      });
+      queryParams['filterRequest'] = jsonEncode(filter.toJson());
     }
 
-    final url = Uri.parse('$baseUrl/api/v1/issues').replace(queryParameters: queryParams);
+    final url = Uri.parse('$baseUrl/api/v1/issues')
+        .replace(queryParameters: queryParams);
+
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       return PageIssueSummaryResponse.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to fetch issues: ${response.body}');
+    }
+  }
+
+  /// -------------------- Issue Clusters --------------------
+  Future<IssueClusterResponse> getIssueClusters(
+      IssueClusterRequest request) async {
+    final url = Uri.parse('$baseUrl/api/v1/issues/clusters')
+        .replace(queryParameters: {
+      'clusterRequest': jsonEncode(request.toJson()),
+    });
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return IssueClusterResponse.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch clusters: ${response.body}');
     }
   }
 }

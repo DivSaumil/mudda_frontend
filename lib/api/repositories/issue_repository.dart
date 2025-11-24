@@ -6,8 +6,11 @@ class IssueRepository {
 
   IssueRepository({required this.service});
 
-  Future<List<IssueResponse>> fetchIssues(
-      {IssueFilterRequest? filter, int page = 1, int size = 20}) async {
+  Future<List<IssueResponse>> fetchIssues({
+    IssueFilterRequest? filter,
+    int page = 0,
+    int size = 20,
+  }) async {
     final pageData =
         await service.getAllIssues(filter: filter, page: page, size: size);
     return pageData.issues;
@@ -27,5 +30,13 @@ class IssueRepository {
 
   Future<void> deleteIssue(int id) async {
     return await service.deleteIssue(id);
+  }
+
+  /// -------- Cluster Fetching --------
+
+  Future<IssueClusterResponse> getClusters(int k) async {
+    return await service.getIssueClusters(
+      IssueClusterRequest(numberOfClusters: k),
+    );
   }
 }
