@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mudda_frontend/pages/createPost.dart'; // Import to navigate to Create Issue
+import 'package:mudda_frontend/pages/CreatePost.dart'; // Import to navigate to Create Issue
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
