@@ -1,24 +1,35 @@
 class IssueResponse {
   final int id;
   final String title;
-  final String content;
-  final String? imageUrl;
-  final int likes;
-  final int comments;
-  final String fullContent;
+  final String content; // Keeping this but might be empty in list view
+  final List<String> mediaUrls;
+  final int voteCount;
+  final int comments; // Not in snippet, defaulting to 0
+  final String fullContent; // Not in snippet, defaulting to content
+  final String status;
+  final String createdAt;
+  final bool hasUserVoted;
+  final bool canUserVote;
 
   IssueResponse({
     required this.id,
     required this.title,
     required this.content,
-    this.imageUrl,
-    required this.likes,
+    required this.mediaUrls,
+    required this.voteCount,
     required this.comments,
     required this.fullContent,
+    required this.status,
+    required this.createdAt,
+    required this.hasUserVoted,
+    required this.canUserVote,
   });
 
+  // Helper to get the first image URL if available
+  String? get firstImageUrl => mediaUrls.isNotEmpty ? mediaUrls.first : null;
+
   factory IssueResponse.fromJson(Map<String, dynamic> json) {
-    // Handle id conversion (could be int or String)
+    // Handle id conversion
     int parseId(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
@@ -26,14 +37,31 @@ class IssueResponse {
       return 0;
     }
 
+    // Handle media_urls
+    List<String> parseMediaUrls(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value.map((e) => e.toString()).toList();
+      return [];
+    }
+
     return IssueResponse(
       id: parseId(json['id']),
       title: (json['title'] as String?) ?? '',
-      content: (json['content'] as String?) ?? '',
-      imageUrl: json['imageUrl'] as String?,
-      likes: (json['likes'] as int?) ?? 0,
-      comments: (json['comments'] as int?) ?? 0,
-      fullContent: (json['fullContent'] as String?) ?? (json['content'] as String?) ?? '',
+      content: (json['content'] as String?) ?? '', // Might be missing in list
+      mediaUrls: parseMediaUrls(json['media_urls']),
+      voteCount: (json['vote_count'] as int?) ?? 0,
+      comments:
+          (json['comments'] as int?) ??
+          0, // Defaulting as it's missing in snippet
+      fullContent:
+          (json['fullContent'] as String?) ??
+          (json['content'] as String?) ??
+          '',
+      status: (json['status'] as String?) ?? 'PENDING',
+      createdAt:
+          (json['created_at'] as String?) ?? DateTime.now().toIso8601String(),
+      hasUserVoted: (json['has_user_voted'] as bool?) ?? false,
+      canUserVote: (json['can_user_vote'] as bool?) ?? false,
     );
   }
 
@@ -42,10 +70,14 @@ class IssueResponse {
       'id': id,
       'title': title,
       'content': content,
-      'imageUrl': imageUrl,
-      'likes': likes,
+      'media_urls': mediaUrls,
+      'vote_count': voteCount,
       'comments': comments,
       'fullContent': fullContent,
+      'status': status,
+      'created_at': createdAt,
+      'has_user_voted': hasUserVoted,
+      'can_user_vote': canUserVote,
     };
   }
 }
@@ -53,7 +85,7 @@ class IssueResponse {
 class CreateIssueRequest {
   final String title;
   final String content;
-  final String? imageUrl;
+  final String? imageUrl; // Keeping for backward compat or update if needed
 
   CreateIssueRequest({
     required this.title,
@@ -108,9 +140,7 @@ class IssueClusterRequest {
   IssueClusterRequest({required this.numberOfClusters});
 
   Map<String, dynamic> toJson() {
-    return {
-      'numberOfClusters': numberOfClusters,
-    };
+    return {'numberOfClusters': numberOfClusters};
   }
 }
 
@@ -143,18 +173,30 @@ class PageIssueSummaryResponse {
 
   factory PageIssueSummaryResponse.fromJson(Map<String, dynamic> json) {
     final content = json['content'];
+    final page = json['page'];
     List<IssueResponse> issuesList = [];
-    
+
     if (content != null && content is List) {
       issuesList = content
           .map((i) => IssueResponse.fromJson(i as Map<String, dynamic>))
           .toList();
     }
-    
+
+    int totalPages = 1;
+    int totalElements = 0;
+
+    if (page != null && page is Map) {
+      totalPages = (page['totalPages'] as int?) ?? 1;
+      totalElements = (page['totalElements'] as int?) ?? 0;
+    } else {
+      totalPages = (json['totalPages'] as int?) ?? 1;
+      totalElements = (json['totalElements'] as int?) ?? 0;
+    }
+
     return PageIssueSummaryResponse(
       issues: issuesList,
-      totalPages: json['totalPages'] ?? 1,
-      totalElements: json['totalElements'] ?? 0,
+      totalPages: totalPages,
+      totalElements: totalElements,
     );
   }
 }

@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:mudda_frontend/pages/LoginPage.dart';
 import 'package:mudda_frontend/pages/createPost.dart';
 import 'package:mudda_frontend/pages/ActivityPage.dart';
 import 'package:mudda_frontend/pages/ProfilePage.dart';
 import 'package:mudda_frontend/pages/DashboardPage.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
+import 'package:mudda_frontend/api/models/comment_models.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/repositories/vote_repository.dart';
+import 'package:mudda_frontend/api/repositories/comment_repository.dart';
 import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/services/vote_service.dart';
+import 'package:mudda_frontend/api/services/comment_service.dart';
 import 'package:mudda_frontend/api/config/constants.dart';
 
 void main() {
@@ -27,21 +31,55 @@ class RootApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mudda',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
+        primarySwatch: Colors.deepPurple, // More modern primary color
+        scaffoldBackgroundColor: const Color(
+          0xFFF5F7FA,
+        ), // Light grey background
         appBarTheme: const AppBarTheme(
           elevation: 0,
           backgroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Colors.black),
+          iconTheme: IconThemeData(color: Colors.black87),
+          titleTextStyle: TextStyle(
+            color: Colors.black87,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          color: Colors.white,
         ),
         textTheme: const TextTheme(
-          titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
-          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
-          bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
+          titleLarge: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+            letterSpacing: -0.5,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 15,
+            color: Colors.black54,
+            height: 1.5,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
         ),
         tabBarTheme: const TabBarThemeData(
-          labelColor: Colors.blue,
+          labelColor: Colors.deepPurple,
           unselectedLabelColor: Colors.grey,
         ),
       ),
@@ -58,14 +96,11 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  // Set to false to enable the login flow.
   bool _isLoggedIn = true;
 
   @override
   void initState() {
     super.initState();
-    // For development, we can bypass the login screen.
-    // To enable login, set _isLoggedIn to false.
     if (!_isLoggedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showLoginPage();
@@ -87,7 +122,6 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading indicator until login flow is complete, then show the main app.
     return _isLoggedIn
         ? const MainAppScreen()
         : const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -106,11 +140,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   final List<Widget> _screens = [
-    const HomePage(), // Index 0: Home (from main.dart)
-    const Center(child: Text('Search Page - To be implemented')), // Index 1: Search
-    const CreateIssuePage(), // Index 2: New Post
-    const AccountActivityPage(), // Index 3: Alerts
-    const ProfilePage(), // Index 4: Profile
+    const HomePage(),
+    const Center(child: Text('Search Page - To be implemented')),
+    const CreateIssuePage(),
+    const AccountActivityPage(),
+    const ProfilePage(),
   ];
 
   void _onNavItemTapped(int index) {
@@ -120,9 +154,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 
   void _openDashboard() {
-    // Close the drawer first
     Navigator.pop(context);
-    // Navigate to the Dashboard Page
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const DashboardPage()),
@@ -135,68 +167,90 @@ class _MainAppScreenState extends State<MainAppScreen> {
       key: _scaffoldKey,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu_rounded),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text('Mudda', style: Theme.of(context).textTheme.titleLarge),
+        title: const Text('Mudda'),
+        centerTitle: false,
         actions: [
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage(
-                'https://randomuser.me/api/portraits/men/1.jpg'), // Static image for now
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade200, width: 2),
+            ),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(
+                'https://randomuser.me/api/portraits/men/1.jpg',
+              ),
+            ),
           ),
-          const SizedBox(width: 16),
         ],
       ),
       drawer: AppDrawer(
         onProfileTap: () {
-          Navigator.pop(context); // Close the drawer
-          _onNavItemTapped(4); // Navigate to ProfilePage
+          Navigator.pop(context);
+          _onNavItemTapped(4);
         },
         onActivityTap: () {
-          Navigator.pop(context); // Close the drawer
-          _onNavItemTapped(3); // Navigate to ActivityPage
+          Navigator.pop(context);
+          _onNavItemTapped(3);
         },
-        onDashboardTap: _openDashboard, // Pass the dashboard callback
+        onDashboardTap: _openDashboard,
       ),
-      body: IndexedStack(
-        index: _currentNavIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentNavIndex,
-        onTap: _onNavItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
-            label: 'New',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: 'Alerts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      body: IndexedStack(index: _currentNavIndex, children: _screens),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentNavIndex,
+          onTap: _onNavItemTapped,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: Colors.deepPurple,
+          unselectedItemColor: Colors.grey.shade400,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search_rounded),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.deepPurple,
+                child: Icon(Icons.add_rounded, color: Colors.white),
+              ),
+              label: 'New',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_rounded),
+              label: 'Alerts',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
-// Post class removed - using IssueResponse from API models instead
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -207,20 +261,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<IssueResponse> _posts = [];
-  int _page = 0; // API uses 0-based pagination
+  int _page = 0;
   bool _hasMore = true;
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
-  int _selectedCategory = 1;
+  int _selectedCategory = 0;
   IssueResponse? _selectedPost;
   late final IssueRepository _issueRepository;
+  late final VoteRepository _voteRepository;
+  late final CommentRepository _commentRepository;
+
+  final List<String> _categories = [
+    'All',
+    'Infrastructure',
+    'Safety',
+    'Environment',
+    'Other',
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Initialize API services
     final issueService = IssueService(baseUrl: AppConstants.baseUrl);
+    final voteService = VoteService(baseUrl: AppConstants.baseUrl);
+    final commentService = CommentService(baseUrl: AppConstants.baseUrl);
+
     _issueRepository = IssueRepository(service: issueService);
+    _voteRepository = VoteRepository(service: voteService);
+    _commentRepository = CommentRepository(service: commentService);
+
     _loadPosts();
     _scrollController.addListener(_scrollListener);
   }
@@ -232,8 +301,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
         !_isLoading &&
         _hasMore) {
       _loadPosts();
@@ -253,13 +322,13 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _posts.addAll(newPosts);
         _page++;
-        _hasMore = newPosts.length == 20; // Check if there are more pages
+        _hasMore = newPosts.length == 20;
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading posts: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading posts: $e')));
       }
     } finally {
       if (mounted) {
@@ -272,7 +341,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedCategory = index;
       _posts.clear();
-      _page = 0; // Reset to first page
+      _page = 0;
       _hasMore = true;
       _loadPosts();
     });
@@ -295,6 +364,8 @@ class _HomePageState extends State<HomePage> {
       builder: (context) {
         return PostDetailPane(
           post: _selectedPost!,
+          voteRepository: _voteRepository,
+          commentRepository: _commentRepository,
           onClose: _closeDetailPane,
         );
       },
@@ -312,33 +383,39 @@ class _HomePageState extends State<HomePage> {
             onRefresh: () async {
               setState(() {
                 _posts.clear();
-                _page = 0; // Reset to first page
+                _page = 0;
                 _hasMore = true;
               });
               await _loadPosts();
             },
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _posts.length + (_hasMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < _posts.length) {
-                  return PostCard(
-                    post: _posts[index],
-                    onTap: _openPostDetail,
-                  );
-                } else {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: _hasMore
-                          ? const CircularProgressIndicator()
-                          : const Text('No more posts'),
+            child: _posts.isEmpty && _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                  );
-                }
-              },
-            ),
+                    itemCount: _posts.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index < _posts.length) {
+                        return PostCard(
+                          post: _posts[index],
+                          voteRepository: _voteRepository,
+                          onTap: _openPostDetail,
+                        );
+                      } else {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: _hasMore
+                                ? const CircularProgressIndicator()
+                                : const Text('No more posts'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
           ),
         ),
       ],
@@ -346,138 +423,357 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildCategoryBar() {
-    return SizedBox(
-      height: 48,
-      child: ListView(
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          for (int i = 0; i < 4; i++)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text('Category ${i + 1}'),
-                selected: _selectedCategory == i,
-                onSelected: (_) => _selectTab(i),
-                selectedColor: Colors.blue[100],
-                checkmarkColor: Colors.blue,
+        itemCount: _categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final isSelected = _selectedCategory == index;
+          return GestureDetector(
+            onTap: () => _selectTab(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.black87 : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isSelected ? Colors.transparent : Colors.grey.shade300,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Center(
+                child: Text(
+                  _categories[index],
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final IssueResponse post;
+  final VoteRepository voteRepository;
   final Function(IssueResponse) onTap;
 
-  const PostCard({super.key, required this.post, required this.onTap});
+  const PostCard({
+    super.key,
+    required this.post,
+    required this.voteRepository,
+    required this.onTap,
+  });
+
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard>
+    with SingleTickerProviderStateMixin {
+  bool _isVoting = false;
+  late int _localLikes;
+  late bool _hasVoted;
+
+  @override
+  void initState() {
+    super.initState();
+    _localLikes = widget.post.voteCount;
+    _hasVoted = widget.post.hasUserVoted;
+  }
+
+  Future<void> _handleVote() async {
+    if (_isVoting) return;
+    setState(() => _isVoting = true);
+
+    try {
+      // Optimistic update
+      setState(() {
+        if (_hasVoted) {
+          _localLikes--;
+          _hasVoted = false;
+        } else {
+          _localLikes++;
+          _hasVoted = true;
+        }
+      });
+
+      if (_hasVoted) {
+        await widget.voteRepository.createVote(widget.post.id);
+      } else {
+        await widget.voteRepository.deleteVote(widget.post.id);
+      }
+    } catch (e) {
+      // Revert on failure
+      if (mounted) {
+        setState(() {
+          if (_hasVoted) {
+            _localLikes--;
+            _hasVoted = false;
+          } else {
+            _localLikes++;
+            _hasVoted = true;
+          }
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to vote: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isVoting = false);
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'OPEN':
+        return Colors.orange;
+      case 'SOLVED':
+      case 'CLOSED':
+        return Colors.green;
+      case 'PENDING':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(widget.post.status);
+
     return GestureDetector(
-      onTap: () => onTap(post),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
-        margin: const EdgeInsets.only(bottom: 16),
+      onTap: () => widget.onTap(widget.post),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.imageUrl != null) _buildImageSection(),
-            _buildContentSection(context),
+            // Header with User and Status
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 20,
+                    backgroundImage: NetworkImage(
+                      'https://randomuser.me/api/portraits/women/44.jpg',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Anonymous Citizen', // Placeholder
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          '2 hrs ago', // Placeholder
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.post.status.toUpperCase(),
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Image
+            if (widget.post.firstImageUrl != null)
+              Hero(
+                tag: 'post_image_${widget.post.id}',
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: NetworkImage(widget.post.firstImageUrl!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.post.title,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(height: 1.3),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.post.content.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.post.content,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          _buildActionButton(
+                            icon: _hasVoted
+                                ? Icons.pan_tool
+                                : Icons.pan_tool_outlined,
+                            label: '$_localLikes',
+                            color: _hasVoted
+                                ? Colors.deepPurple
+                                : Colors.grey.shade600,
+                            onTap: _handleVote,
+                          ),
+                          const SizedBox(width: 24),
+                          _buildActionButton(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            label: '${widget.post.comments}',
+                            onTap: () => widget.onTap(widget.post),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.share_rounded,
+                          color: Colors.grey.shade600,
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildImageSection() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      child: Image.network(
-        post.imageUrl!,
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          height: 150,
-          color: Colors.grey[200],
-          child: const Center(child: Icon(Icons.broken_image)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContentSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    Color? color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
         children: [
-          Text(post.title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(post.content, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(children: [
-                const Icon(Icons.pan_tool, size: 20),
-                const SizedBox(width: 4),
-                Text('${post.likes}'),
-              ]),
-              Row(children: [
-                const Icon(Icons.chat_bubble_outline, size: 20),
-                const SizedBox(width: 4),
-                Text('${post.comments}'),
-              ]),
-              IconButton(
-                icon: const Icon(Icons.more_horiz),
-                onPressed: () => _showCardMenu(context),
-              ),
-            ],
+          Icon(icon, size: 22, color: color ?? Colors.grey.shade600),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color ?? Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  void _showCardMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('Share'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.bookmark_border),
-              title: const Text('Save'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: const Text('Report'),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        );
-      },
     );
   }
 }
 
 class PostDetailPane extends StatefulWidget {
   final IssueResponse post;
+  final VoteRepository voteRepository;
+  final CommentRepository commentRepository;
   final VoidCallback onClose;
 
-  const PostDetailPane({super.key, required this.post, required this.onClose});
+  const PostDetailPane({
+    super.key,
+    required this.post,
+    required this.voteRepository,
+    required this.commentRepository,
+    required this.onClose,
+  });
 
   @override
   State<PostDetailPane> createState() => _PostDetailPaneState();
@@ -485,7 +781,72 @@ class PostDetailPane extends StatefulWidget {
 
 class _PostDetailPaneState extends State<PostDetailPane> {
   final ScrollController scrollController = ScrollController();
+  final TextEditingController _commentController = TextEditingController();
   double dragStartPosition = 0;
+
+  List<CommentResponse> _comments = [];
+  bool _isLoadingComments = false;
+  bool _isPostingComment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadComments() async {
+    setState(() => _isLoadingComments = true);
+    try {
+      final response = await widget.commentRepository.getCommentsByIssue(
+        widget.post.id,
+      );
+      setState(() {
+        _comments = response.comments;
+      });
+    } catch (e) {
+      if (mounted) {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('Failed to load comments: $e')),
+        // );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingComments = false);
+    }
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    setState(() => _isPostingComment = true);
+    try {
+      final request = CreateCommentRequest(
+        content: _commentController.text.trim(),
+      );
+      final newComment = await widget.commentRepository.createComment(
+        widget.post.id,
+        request,
+      );
+
+      setState(() {
+        _comments.insert(0, newComment);
+        _commentController.clear();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isPostingComment = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -507,17 +868,13 @@ class _PostDetailPaneState extends State<PostDetailPane> {
             topRight: Radius.circular(24),
           ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              spreadRadius: 0,
-            )
+            BoxShadow(color: Colors.black26, blurRadius: 20, spreadRadius: 0),
           ],
         ),
-        padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+        padding: const EdgeInsets.only(top: 12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Drag Handle
             Center(
               child: Container(
                 width: 40,
@@ -529,103 +886,174 @@ class _PostDetailPaneState extends State<PostDetailPane> {
               ),
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.topRight,
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onClose();
-                },
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Issue Details',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onClose();
+                    },
+                  ),
+                ],
               ),
             ),
+            const Divider(),
+
+            // Content
             Expanded(
               child: SingleChildScrollView(
                 controller: scrollController,
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.post.imageUrl != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          widget.post.imageUrl!,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 200,
-                            color: Colors.grey[200],
-                            child: const Center(child: Icon(Icons.broken_image)),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.post.title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.post.fullContent,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        buildActionButton(Icons.pan_tool, '${widget.post.likes}'), // Updated to raised fist icon
-                        buildActionButton(Icons.share, 'Share'),
-                        buildActionButton(Icons.bookmark_border, 'Save'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Comments',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    for (int i = 0; i < 3; i++) buildComment(),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 16,
-                            backgroundImage: NetworkImage(
-                                'https://randomuser.me/api/portraits/men/41.jpg'),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Add a comment...',
-                                border: InputBorder.none,
+                    if (widget.post.firstImageUrl != null)
+                      Hero(
+                        tag: 'post_image_${widget.post.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            widget.post.firstImageUrl!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: Icon(Icons.broken_image),
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: () {},
-                          ),
-                        ],
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                    Text(
+                      widget.post.title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(height: 1.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.post.fullContent.isNotEmpty
+                          ? widget.post.fullContent
+                          : widget.post.content,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        height: 1.6,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
+
+                    const Text(
+                      'Discussion',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (_isLoadingComments)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_comments.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 48,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No comments yet',
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      for (var comment in _comments) buildComment(comment),
+
+                    const SizedBox(height: 80), // Space for input field
                   ],
                 ),
+              ),
+            ),
+
+            // Comment Input
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 18,
+                    backgroundImage: NetworkImage(
+                      'https://randomuser.me/api/portraits/men/41.jpg',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: TextField(
+                        controller: _commentController,
+                        decoration: const InputDecoration(
+                          hintText: 'Add a comment...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: _isPostingComment
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.send_rounded,
+                            color: Colors.deepPurple,
+                          ),
+                    onPressed: _isPostingComment ? null : _postComment,
+                  ),
+                ],
               ),
             ),
           ],
@@ -634,67 +1062,85 @@ class _PostDetailPaneState extends State<PostDetailPane> {
     );
   }
 
-  Widget buildActionButton(IconData icon, String label) {
-    return Column(
-      children: [
-        Icon(icon, size: 28),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget buildComment() {
+  Widget buildComment(CommentResponse comment) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage('https://randomuser.me/api/portraits/women/32.jpg'),
+            radius: 20,
+            backgroundImage: NetworkImage(
+              'https://randomuser.me/api/portraits/women/32.jpg',
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Jane Doe',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'User', // Placeholder
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        comment.content,
+                        style: const TextStyle(fontSize: 14, height: 1.4),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'This is a sample comment on the post. It provides additional insight into the topic.',
-                  style: TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Row(
                   children: [
+                    const SizedBox(width: 4),
                     Text(
-                      '2h ago',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      'Just now',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 11,
+                      ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
+                      'Like',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
                       'Reply',
                       style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.pan_tool, size: 18), // Raised Fist alternative
-            onPressed: () {},
           ),
         ],
       ),
@@ -705,13 +1151,13 @@ class _PostDetailPaneState extends State<PostDetailPane> {
 class AppDrawer extends StatelessWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onActivityTap;
-  final VoidCallback onDashboardTap; // Added callback for dashboard
+  final VoidCallback onDashboardTap;
 
   const AppDrawer({
     super.key,
     required this.onProfileTap,
     required this.onActivityTap,
-    required this.onDashboardTap, // Required in constructor
+    required this.onDashboardTap,
   });
 
   @override
@@ -720,39 +1166,73 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
-            child: Text('Mudda Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurple, Colors.purpleAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 35, color: Colors.deepPurple),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Welcome Back',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                Text(
+                  'Mudda User',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          // New Dashboard Item
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Community Dashboard'),
-            onTap: onDashboardTap,
+          _buildDrawerItem(
+            Icons.dashboard_rounded,
+            'Community Dashboard',
+            onDashboardTap,
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile'),
-            onTap: onProfileTap,
+          const Divider(indent: 16, endIndent: 16),
+          _buildDrawerItem(Icons.person_rounded, 'Profile', onProfileTap),
+          _buildDrawerItem(
+            Icons.local_activity_rounded,
+            'Account Activity',
+            onActivityTap,
           ),
-          ListTile(
-            leading: const Icon(Icons.local_activity),
-            title: const Text('Account Activity'),
-            onTap: onActivityTap,
+          _buildDrawerItem(
+            Icons.settings_rounded,
+            'Settings',
+            () => Navigator.pop(context),
           ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () => Navigator.pop(context), // Close the drawer
-          ),
-          ListTile(
-            leading: const Icon(Icons.help),
-            title: const Text('Help & Support'),
-            onTap: () => Navigator.pop(context), // Close the drawer
+          _buildDrawerItem(
+            Icons.help_rounded,
+            'Help & Support',
+            () => Navigator.pop(context),
           ),
         ],
       ),
     );
   }
-} 
+
+  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.deepPurple.shade400),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    );
+  }
+}
