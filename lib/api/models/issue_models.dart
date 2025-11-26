@@ -18,14 +18,22 @@ class IssueResponse {
   });
 
   factory IssueResponse.fromJson(Map<String, dynamic> json) {
+    // Handle id conversion (could be int or String)
+    int parseId(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return IssueResponse(
-      id: json['id'],
-      title: json['title'],
-      content: json['content'],
-      imageUrl: json['imageUrl'],
-      likes: json['likes'] ?? 0,
-      comments: json['comments'] ?? 0,
-      fullContent: json['fullContent'] ?? json['content'],
+      id: parseId(json['id']),
+      title: (json['title'] as String?) ?? '',
+      content: (json['content'] as String?) ?? '',
+      imageUrl: json['imageUrl'] as String?,
+      likes: (json['likes'] as int?) ?? 0,
+      comments: (json['comments'] as int?) ?? 0,
+      fullContent: (json['fullContent'] as String?) ?? (json['content'] as String?) ?? '',
     );
   }
 
@@ -134,10 +142,17 @@ class PageIssueSummaryResponse {
   });
 
   factory PageIssueSummaryResponse.fromJson(Map<String, dynamic> json) {
+    final content = json['content'];
+    List<IssueResponse> issuesList = [];
+    
+    if (content != null && content is List) {
+      issuesList = content
+          .map((i) => IssueResponse.fromJson(i as Map<String, dynamic>))
+          .toList();
+    }
+    
     return PageIssueSummaryResponse(
-      issues: (json['content'] as List)
-          .map((i) => IssueResponse.fromJson(i))
-          .toList(),
+      issues: issuesList,
       totalPages: json['totalPages'] ?? 1,
       totalElements: json['totalElements'] ?? 0,
     );

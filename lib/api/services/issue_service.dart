@@ -81,9 +81,14 @@ class IssueService {
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      return PageIssueSummaryResponse.fromJson(jsonDecode(response.body));
+      try {
+        final jsonData = jsonDecode(response.body);
+        return PageIssueSummaryResponse.fromJson(jsonData);
+      } catch (e) {
+        throw Exception('Failed to parse issues response: $e. Response body: ${response.body}');
+      }
     } else {
-      throw Exception('Failed to fetch issues: ${response.body}');
+      throw Exception('Failed to fetch issues: ${response.statusCode} - ${response.body}');
     }
   }
 

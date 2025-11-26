@@ -1,13 +1,15 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import 'package:mudda_frontend/pages/LoginPage.dart';
 import 'package:mudda_frontend/pages/createPost.dart';
 import 'package:mudda_frontend/pages/ActivityPage.dart';
 import 'package:mudda_frontend/pages/ProfilePage.dart';
-import 'package:mudda_frontend/pages/DashboardPage.dart'; // Added Import
+import 'package:mudda_frontend/pages/DashboardPage.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
+import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/config/constants.dart';
 
 void main() {
   runApp(
@@ -194,60 +196,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 }
 
-class Post {
-  final String id;
-  final String title;
-  final String content;
-  final String? imageUrl;
-  final int likes;
-  final int comments;
-  final String fullContent;
-
-  Post({
-    required this.id,
-    required this.title,
-    required this.content,
-    this.imageUrl,
-    required this.likes,
-    required this.comments,
-    required this.fullContent,
-  });
-
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-      id: json['id'],
-      title: json['title'],
-      content: json['content'],
-      imageUrl: json['imageUrl'],
-      likes: json['likes'],
-      comments: json['comments'],
-      fullContent: json['fullContent'] ?? json['content'] * 5, // Generate longer content
-    );
-  }
-}
-
-class PostService {
-  static Future<List<Post>> fetchPosts(int page, {int limit = 10}) async {
-    // simulate network latency
-    await Future.delayed(const Duration(seconds: 1));
-
-    // generate `limit` dummy posts for this page
-    return List.generate(limit, (index) {
-      final id = ((page - 1) * limit + index + 1).toString();
-      return Post(
-        id: id,
-        title: 'Dummy Title #$id',
-        content: 'This is a short excerpt for post #$id.',
-        imageUrl: index % 2 == 0
-            ? 'https://picsum.photos/seed/$id/400/200'
-            : null,
-        likes: (index + 1) * 3,
-        comments: (index + 1) * 2,
-        fullContent: List.filled(20, 'Full content of post #$id.').join(' '),
-      );
-    });
-  }
-}
+// Post class removed - using IssueResponse from API models instead
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -257,17 +206,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<Post> _posts = [];
-  int _page = 1;
+  final List<IssueResponse> _posts = [];
+  int _page = 0; // API uses 0-based pagination
   bool _hasMore = true;
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
   int _selectedCategory = 1;
-  Post? _selectedPost;
+  IssueResponse? _selectedPost;
+  late final IssueRepository _issueRepository;
 
   @override
   void initState() {
     super.initState();
+    // Initialize API services
+    final issueService = IssueService(baseUrl: AppConstants.baseUrl);
+    _issueRepository = IssueRepository(service: issueService);
     _loadPosts();
     _scrollController.addListener(_scrollListener);
   }
@@ -293,18 +246,25 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isLoading = true);
 
     try {
-      final newPosts = await PostService.fetchPosts(_page);
+      final newPosts = await _issueRepository.fetchIssues(
+        page: _page,
+        size: 20,
+      );
       setState(() {
         _posts.addAll(newPosts);
         _page++;
-        _hasMore = newPosts.length == 10;
+        _hasMore = newPosts.length == 20; // Check if there are more pages
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading posts: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading posts: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -312,13 +272,13 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedCategory = index;
       _posts.clear();
-      _page = 1;
+      _page = 0; // Reset to first page
       _hasMore = true;
       _loadPosts();
     });
   }
 
-  void _openPostDetail(Post post) {
+  void _openPostDetail(IssueResponse post) {
     setState(() => _selectedPost = post);
     _showDetailPane();
   }
@@ -352,7 +312,7 @@ class _HomePageState extends State<HomePage> {
             onRefresh: () async {
               setState(() {
                 _posts.clear();
-                _page = 1;
+                _page = 0; // Reset to first page
                 _hasMore = true;
               });
               await _loadPosts();
@@ -410,8 +370,8 @@ class _HomePageState extends State<HomePage> {
 }
 
 class PostCard extends StatelessWidget {
-  final Post post;
-  final Function(Post) onTap;
+  final IssueResponse post;
+  final Function(IssueResponse) onTap;
 
   const PostCard({super.key, required this.post, required this.onTap});
 
@@ -514,7 +474,7 @@ class PostCard extends StatelessWidget {
 }
 
 class PostDetailPane extends StatefulWidget {
-  final Post post;
+  final IssueResponse post;
   final VoidCallback onClose;
 
   const PostDetailPane({super.key, required this.post, required this.onClose});

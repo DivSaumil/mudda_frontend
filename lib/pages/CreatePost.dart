@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/config/constants.dart';
 
 class CreateIssuePage extends StatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);
@@ -63,28 +65,33 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
     final String content = _contentController.text.trim();
 
     if (_hasContent) {
-      // Build Issue object
-      Issue issue = Issue(
-        title: headline,
-        description: content,
-        reporterId: 1, // TODO: replace with logged-in user ID
-        locationId: 101, // TODO: integrate real location
-        categoryId: _selectedCategory != null ? _categoryMap[_selectedCategory!] ?? 0 : 0,
-        mediaUrls: _attachedImages,
-      );
-
-      final IssueRepository _repository = IssueRepository();
-      bool success = await _repository.addIssue(issue);
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Issue created successfully")),
+      try {
+        // Build CreateIssueRequest object
+        CreateIssueRequest request = CreateIssueRequest(
+          title: headline.isNotEmpty ? headline : content,
+          content: content.isNotEmpty ? content : headline,
+          imageUrl: _attachedImages.isNotEmpty ? _attachedImages.first : null,
         );
-        Navigator.pop(context); // close the page
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("❌ Failed to create issue")),
-        );
+
+        // Initialize service and repository
+        final IssueService service = IssueService(baseUrl: AppConstants.baseUrl);
+        final IssueRepository repository = IssueRepository(service: service);
+        
+        // Create issue
+        await repository.createIssue(request);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("✅ Issue created successfully")),
+          );
+          Navigator.pop(context); // close the page
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("❌ Failed to create issue: ${e.toString()}")),
+          );
+        }
       }
     }
 
