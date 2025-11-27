@@ -46,7 +46,7 @@ class CreateCommentRequest {
   final String content;
   CreateCommentRequest({required this.content});
 
-  Map<String, dynamic> toJson() => {'content': content};
+  Map<String, dynamic> toJson() => {'text': content};
 }
 
 class CommentLikeResponse {

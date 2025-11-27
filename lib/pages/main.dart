@@ -14,11 +14,67 @@ import 'package:mudda_frontend/api/services/issue_service.dart';
 import 'package:mudda_frontend/api/services/vote_service.dart';
 import 'package:mudda_frontend/api/services/comment_service.dart';
 import 'package:mudda_frontend/api/config/constants.dart';
+import 'package:dio/dio.dart';
+import 'package:mudda_frontend/api/services/storage_service.dart';
+import 'package:mudda_frontend/api/services/auth_interceptor.dart';
+import 'package:mudda_frontend/api/services/auth_service.dart';
+import 'package:mudda_frontend/api/services/user_service.dart';
+import 'package:mudda_frontend/api/services/category_service.dart';
+import 'package:mudda_frontend/api/services/location_service.dart';
+import 'package:mudda_frontend/api/services/role_service.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider<UserProfileData>(
-      create: (BuildContext context) => UserProfileData(),
+    MultiProvider(
+      providers: [
+        Provider(create: (_) => StorageService()),
+        ProxyProvider<StorageService, AuthInterceptor>(
+          update: (_, storage, __) => AuthInterceptor(storage),
+        ),
+        ProxyProvider<AuthInterceptor, Dio>(
+          update: (_, interceptor, __) {
+            final dio = Dio(
+              BaseOptions(
+                baseUrl: '${AppConstants.baseUrl}/api/v1',
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 15),
+                contentType: Headers.jsonContentType,
+                validateStatus: (status) => status! < 500,
+              ),
+            );
+            dio.interceptors.add(interceptor);
+            return dio;
+          },
+        ),
+        ProxyProvider2<Dio, StorageService, AuthService>(
+          update: (_, dio, storage, __) =>
+              AuthService(dio: dio, storageService: storage),
+        ),
+        ProxyProvider<Dio, IssueService>(
+          update: (_, dio, __) => IssueService(dio),
+        ),
+        ProxyProvider<Dio, VoteService>(
+          update: (_, dio, __) => VoteService(dio),
+        ),
+        ProxyProvider<Dio, CommentService>(
+          update: (_, dio, __) => CommentService(dio),
+        ),
+        ProxyProvider<Dio, UserService>(
+          update: (_, dio, __) => UserService(dio),
+        ),
+        ProxyProvider<Dio, CategoryService>(
+          update: (_, dio, __) => CategoryService(dio),
+        ),
+        ProxyProvider<Dio, LocationService>(
+          update: (_, dio, __) => LocationService(dio),
+        ),
+        ProxyProvider<Dio, RoleService>(
+          update: (_, dio, __) => RoleService(dio),
+        ),
+        ChangeNotifierProvider<UserProfileData>(
+          create: (BuildContext context) => UserProfileData(),
+        ),
+      ],
       child: const RootApp(),
     ),
   );
@@ -96,15 +152,38 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  bool _isLoggedIn = true;
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
-    if (!_isLoggedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() async {
+    try {
+      final storage = context.read<StorageService>();
+      final token = await storage.getToken();
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = token != null;
+          _isLoading = false;
+        });
+
+        if (!_isLoggedIn) {
+          _showLoginPage();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking login status: $e');
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = false;
+          _isLoading = false;
+        });
         _showLoginPage();
-      });
+      }
     }
   }
 
@@ -117,11 +196,18 @@ class _AuthGateState extends State<AuthGate> {
       setState(() {
         _isLoggedIn = true;
       });
+    } else if (mounted && !_isLoggedIn) {
+      // If user dismissed login without logging in, maybe show it again or show a landing page
+      // For now, let's just show login again
+      _showLoginPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return _isLoggedIn
         ? const MainAppScreen()
         : const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -282,9 +368,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final issueService = IssueService(baseUrl: AppConstants.baseUrl);
-    final voteService = VoteService(baseUrl: AppConstants.baseUrl);
-    final commentService = CommentService(baseUrl: AppConstants.baseUrl);
+    final issueService = context.read<IssueService>();
+    final voteService = context.read<VoteService>();
+    final commentService = context.read<CommentService>();
 
     _issueRepository = IssueRepository(service: issueService);
     _voteRepository = VoteRepository(service: voteService);

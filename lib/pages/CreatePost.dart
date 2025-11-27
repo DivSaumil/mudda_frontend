@@ -3,6 +3,7 @@ import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
 import 'package:mudda_frontend/api/services/issue_service.dart';
 import 'package:mudda_frontend/api/config/constants.dart';
+import 'package:provider/provider.dart';
 
 class CreateIssuePage extends StatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);
@@ -22,17 +23,17 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
   String? _selectedCategory;
 
   final Map<String, int> _categoryMap = {
-  'Sanitation': 1,
-  'Electricity': 2,
-  'Water': 3,
-  'Road': 4,
-  'Infra': 5,
-  'Corruption': 6,
-  'Municipality': 7,
-  'Administrative': 8,
-  'Education': 9,
-  'Other': 10,
-};
+    'Sanitation': 1,
+    'Electricity': 2,
+    'Water': 3,
+    'Road': 4,
+    'Infra': 5,
+    'Corruption': 6,
+    'Municipality': 7,
+    'Administrative': 8,
+    'Education': 9,
+    'Other': 10,
+  };
 
   @override
   void initState() {
@@ -45,13 +46,14 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
   void dispose() {
     _headlineController.dispose();
     _contentController.dispose();
-  // _tagInputController.dispose();
+    // _tagInputController.dispose();
     super.dispose();
   }
 
   void _updateContentStatus() {
     setState(() {
-      _hasContent = _headlineController.text.trim().isNotEmpty ||
+      _hasContent =
+          _headlineController.text.trim().isNotEmpty ||
           _contentController.text.trim().isNotEmpty ||
           _attachedImages.isNotEmpty ||
           // _tags.isNotEmpty ||
@@ -59,8 +61,7 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
     });
   }
 
-  void _handlePost() async{
-
+  void _handlePost() async {
     final String headline = _headlineController.text.trim();
     final String content = _contentController.text.trim();
 
@@ -71,12 +72,16 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
           title: headline.isNotEmpty ? headline : content,
           content: content.isNotEmpty ? content : headline,
           imageUrl: _attachedImages.isNotEmpty ? _attachedImages.first : null,
+          categoryId: _selectedCategory != null
+              ? _categoryMap[_selectedCategory]
+              : null,
+          locationId: 1, // Default location ID for now
         );
 
         // Initialize service and repository
-        final IssueService service = IssueService(baseUrl: AppConstants.baseUrl);
+        final IssueService service = context.read<IssueService>();
         final IssueRepository repository = IssueRepository(service: service);
-        
+
         // Create issue
         await repository.createIssue(request);
 
@@ -89,46 +94,48 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("❌ Failed to create issue: ${e.toString()}")),
+            SnackBar(
+              content: Text("❌ Failed to create issue: ${e.toString()}"),
+            ),
           );
         }
       }
     }
 
+    //   final String headline = _headlineController.text.trim();
+    //   final String content = _contentController.text.trim();
 
-  //   final String headline = _headlineController.text.trim();
-  //   final String content = _contentController.text.trim();
+    //   if (headline.isNotEmpty ||
+    //       content.isNotEmpty ||
+    //       _attachedImages.isNotEmpty ||
+    // // _tags.isNotEmpty ||
+    //       _selectedCategory != null) {
+    //     final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
+    //     if (headline.isNotEmpty) {
+    //       snackBarMessage.write('Headline: $headline\n');
+    //     }
+    //     if (content.isNotEmpty) {
+    //       snackBarMessage.write('Content: $content\n');
+    //     }
+    //     if (_attachedImages.isNotEmpty) {
+    //       snackBarMessage.write('Images: ${_attachedImages.length}\n');
+    //     }
+    // // Removed tags from snackbar
+    //     if (_selectedCategory != null) {
+    //       snackBarMessage.write('Category: $_selectedCategory\n');
+    //     }
 
-  //   if (headline.isNotEmpty ||
-  //       content.isNotEmpty ||
-  //       _attachedImages.isNotEmpty ||
-  // // _tags.isNotEmpty ||
-  //       _selectedCategory != null) {
-  //     final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
-  //     if (headline.isNotEmpty) {
-  //       snackBarMessage.write('Headline: $headline\n');
-  //     }
-  //     if (content.isNotEmpty) {
-  //       snackBarMessage.write('Content: $content\n');
-  //     }
-  //     if (_attachedImages.isNotEmpty) {
-  //       snackBarMessage.write('Images: ${_attachedImages.length}\n');
-  //     }
-  // // Removed tags from snackbar
-  //     if (_selectedCategory != null) {
-  //       snackBarMessage.write('Category: $_selectedCategory\n');
-  //     }
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(snackBarMessage.toString())),
-  //     );
-  //   }
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(content: Text(snackBarMessage.toString())),
+    //     );
+    //   }
   }
 
   void _addImage() {
     setState(() {
-      _attachedImages
-          .add('https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg');
+      _attachedImages.add(
+        'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+      );
       _updateContentStatus();
     });
   }
@@ -146,14 +153,16 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  title: const Text('Create Issue'),
+        title: const Text('Create Issue'),
         actions: <Widget>[
           TextButton(
             onPressed: _hasContent ? _handlePost : null,
             child: Text(
               'Submit',
               style: TextStyle(
-                color: _hasContent ? Theme.of(context).primaryColor : Colors.grey,
+                color: _hasContent
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -185,7 +194,8 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
               children: <Widget>[
                 const CircleAvatar(
                   backgroundImage: NetworkImage(
-                      'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg'),
+                    'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -214,7 +224,9 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: List<Widget>.generate(_attachedImages.length, (int index) {
+                    children: List<Widget>.generate(_attachedImages.length, (
+                      int index,
+                    ) {
                       return Stack(
                         alignment: Alignment.topRight,
                         children: <Widget>[
@@ -235,7 +247,11 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
                               child: const CircleAvatar(
                                 radius: 12,
                                 backgroundColor: Colors.black54,
-                                child: Icon(Icons.close, color: Colors.white, size: 16),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                               ),
                             ),
                           ),
@@ -258,7 +274,10 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 prefixIcon: const Icon(Icons.category),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
               ),
               isEmpty: _selectedCategory == null,
               child: DropdownButtonHideUnderline(
@@ -273,8 +292,9 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
                       _updateContentStatus();
                     });
                   },
-                  items: _categoryMap.keys
-                      .map<DropdownMenuItem<String>>((String category) {
+                  items: _categoryMap.keys.map<DropdownMenuItem<String>>((
+                    String category,
+                  ) {
                     return DropdownMenuItem<String>(
                       value: category,
                       child: Text(category),
@@ -305,10 +325,16 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.location_on, color: Colors.white),
-                label: const Text('Add Location', style: TextStyle(color: Colors.white)),
+                label: const Text(
+                  'Add Location',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   textStyle: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 onPressed: () {

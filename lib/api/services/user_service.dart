@@ -1,44 +1,38 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../models/user_models.dart';
 
 class UserService {
-  final String baseUrl;
+  final Dio _dio;
 
-  UserService({required this.baseUrl});
+  UserService(this._dio);
 
   Future<UserDetailResponse> getUserById(int id) async {
-    final url = Uri.parse('$baseUrl/api/v1/users/$id');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return UserDetailResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to fetch user: ${response.body}');
+    try {
+      final response = await _dio.get('/users/$id');
+      return UserDetailResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to fetch user: $e');
     }
   }
 
-  Future<UserSummaryResponse> updateUser(int id, UpdateUserRequest request) async {
-    final url = Uri.parse('$baseUrl/api/v1/users/$id');
-    final response = await http.put(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    );
-
-    if (response.statusCode == 200) {
-      return UserSummaryResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to update user: ${response.body}');
+  Future<UserSummaryResponse> updateUser(
+    int id,
+    UpdateUserRequest request,
+  ) async {
+    try {
+      final response = await _dio.put('/users/$id', data: request.toJson());
+      return UserSummaryResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
     }
   }
 
   Future<void> deleteUser(int id) async {
-    final url = Uri.parse('$baseUrl/api/v1/users/$id');
-    final response = await http.delete(url);
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete user: ${response.body}');
+    try {
+      await _dio.delete('/users/$id');
+    } catch (e) {
+      throw Exception('Failed to delete user: $e');
     }
   }
 
@@ -50,35 +44,30 @@ class UserService {
     String sortOrder = 'desc',
   }) async {
     final queryParameters = {
-      'page': page.toString(),
-      'size': size.toString(),
+      'page': page,
+      'size': size,
       'sortBy': sortBy,
       'sortOrder': sortOrder,
       'filterRequest': jsonEncode(filterRequest.toJson()),
     };
 
-    final url = Uri.parse('$baseUrl/api/v1/users').replace(queryParameters: queryParameters);
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return PageUserSummaryResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to fetch users: ${response.body}');
+    try {
+      final response = await _dio.get(
+        '/users',
+        queryParameters: queryParameters,
+      );
+      return PageUserSummaryResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to fetch users: $e');
     }
   }
 
   Future<UserDetailResponse> createUser(CreateUserRequest request) async {
-    final url = Uri.parse('$baseUrl/api/v1/users');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return UserDetailResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to create user: ${response.body}');
+    try {
+      final response = await _dio.post('/users', data: request.toJson());
+      return UserDetailResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to create user: $e');
     }
   }
 }

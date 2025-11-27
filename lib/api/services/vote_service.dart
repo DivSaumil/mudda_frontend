@@ -1,63 +1,55 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../config/constants.dart';
+import 'package:dio/dio.dart';
 import 'package:mudda_frontend/api/models/vote_models.dart';
 
 class VoteService {
-  final String baseUrl;
+  final Dio _dio;
 
-  VoteService({required this.baseUrl});
+  VoteService(this._dio);
 
   Future<VoteResponse> createVote(int issueId) async {
-    final url = Uri.parse('$baseUrl/api/v1/issues/$issueId/votes');
-    final response = await http.post(url);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return VoteResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to create vote: ${response.body}');
+    try {
+      final response = await _dio.post('/issues/$issueId/votes');
+      return VoteResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to create vote: $e');
     }
   }
 
   Future<VoteResponse> deleteVote(int issueId) async {
-    final url = Uri.parse('$baseUrl/api/v1/issues/$issueId/votes');
-    final response = await http.delete(url);
-
-    if (response.statusCode == 200) {
-      return VoteResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to delete vote: ${response.body}');
+    try {
+      final response = await _dio.delete('/issues/$issueId/votes');
+      return VoteResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to delete vote: $e');
     }
   }
 
   Future<PageVote> getAllVotes({int page = 0, int size = 20}) async {
-    final url = Uri.parse('$baseUrl/api/v1/votes?page=$page&size=$size');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return PageVote.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to fetch votes: ${response.body}');
+    try {
+      final response = await _dio.get(
+        '/votes',
+        queryParameters: {'page': page, 'size': size},
+      );
+      return PageVote.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to fetch votes: $e');
     }
   }
 
   Future<Vote> getVoteById(int voteId) async {
-    final url = Uri.parse('$baseUrl/api/v1/votes/$voteId');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return Vote.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to fetch vote: ${response.body}');
+    try {
+      final response = await _dio.get('/votes/$voteId');
+      return Vote.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to fetch vote: $e');
     }
   }
 
   Future<void> deleteVoteById(int voteId) async {
-    final url = Uri.parse('$baseUrl/api/v1/votes/$voteId');
-    final response = await http.delete(url);
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete vote: ${response.body}');
+    try {
+      await _dio.delete('/votes/$voteId');
+    } catch (e) {
+      throw Exception('Failed to delete vote: $e');
     }
   }
 }

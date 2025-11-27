@@ -38,6 +38,8 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   google_fonts: ^6.3.2
+  flutter_secure_storage: ^9.2.4
+  dio: ^5.9.0
 
 dev_dependencies:
   flutter_test:

@@ -85,19 +85,26 @@ class IssueResponse {
 class CreateIssueRequest {
   final String title;
   final String content;
-  final String? imageUrl; // Keeping for backward compat or update if needed
+  final String? imageUrl;
+  final int? categoryId;
+  final int? locationId;
 
   CreateIssueRequest({
     required this.title,
     required this.content,
     this.imageUrl,
+    this.categoryId,
+    this.locationId,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'title': title,
       'content': content,
+      'description': content, // Mapping content to description as required
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (categoryId != null) 'categoryId': categoryId,
+      if (locationId != null) 'locationId': locationId,
     };
   }
 }

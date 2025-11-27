@@ -1,29 +1,7 @@
 import 'package:flutter/material.dart';
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            // Replaced Image.asset with Image.network
-            Image.network(
-                'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-                height: 32),
-            const SizedBox(width: 12),
-            const Text('Mudda'),
-          ],
-        ),
-      ),
-      body: const Center(
-        child: Text('Welcome!'),
-      ),
-    );
-  }
-}
+import 'package:provider/provider.dart';
+import 'package:mudda_frontend/api/services/auth_service.dart';
+import 'package:mudda_frontend/api/models/auth_models.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,22 +16,29 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
   bool _obscurePassword = true;
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
     setState(() => _loading = true);
 
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _loading = false);
-      // Navigate to the main app after login
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute<void>(builder: (_) => const HomePage()),
-      // );
-      // Instead of navigating to a local HomePage, we'll pop the login page
-      // and the main app will handle the navigation.
-      Navigator.pop(context);
-    });
+    try {
+      final authService = context.read<AuthService>();
+      await authService.login(
+        LoginRequest(username: _email, password: _password),
+      );
+
+      if (mounted) {
+        setState(() => _loading = false);
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   void _loginWithGoogle() {
@@ -83,7 +68,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo with branding
                 Column(
                   children: [
                     Container(
@@ -92,16 +76,20 @@ class _LoginPageState extends State<LoginPage> {
                         color: Colors.blue.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child:
-                      const Icon(Icons.lock_outline, size: 48, color: Colors.blue),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        size: 48,
+                        color: Colors.blue,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       '৳ MUDDA',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: Colors.blue.shade900,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            color: Colors.blue.shade900,
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -110,10 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 40),
-
-                // Form Card
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -132,22 +117,18 @@ class _LoginPageState extends State<LoginPage> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 28),
-
-                          // Email Field
                           TextFormField(
                             decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.email_outlined),
-                            ), // Fixed: Closing parenthesis for InputDecoration
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) => v != null && v.contains('@')
+                              labelText: 'Username or Email',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            keyboardType: TextInputType.text,
+                            validator: (v) => v != null && v.isNotEmpty
                                 ? null
-                                : 'Invalid email',
+                                : 'Username or Email is required',
                             onSaved: (v) => _email = v!.trim(),
                           ),
                           const SizedBox(height: 20),
-
-                          // Password Field
                           TextFormField(
                             decoration: InputDecoration(
                               labelText: 'Password',
@@ -160,7 +141,8 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Colors.grey,
                                 ),
                                 onPressed: () => setState(
-                                        () => _obscurePassword = !_obscurePassword),
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -170,34 +152,28 @@ class _LoginPageState extends State<LoginPage> {
                             onSaved: (v) => _password = v!,
                           ),
                           const SizedBox(height: 8),
-
-                          // Forgot Password
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {}, // empty onPressed for now
+                              onPressed: () {},
                               child: const Text('Forgot Password?'),
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Login Button
                           ElevatedButton(
                             onPressed: _loading ? null : _submit,
                             child: _loading
                                 ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                color: Colors.white,
-                              ),
-                            )
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      color: Colors.white,
+                                    ),
+                                  )
                                 : const Text('Log In'),
                           ),
                           const SizedBox(height: 20),
-
-                          // Sign Up Link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -213,24 +189,23 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 32),
-                const Row(children: [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('OR', style: TextStyle(color: Colors.grey)),
-                  ),
-                  Expanded(child: Divider()),
-                ]),
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('OR', style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
                 const SizedBox(height: 32),
-
-                // Social Login Buttons
                 OutlinedButton.icon(
-                  // Replaced Image.asset with Image.network
                   icon: Image.network(
-                      'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-                      height: 24),
+                    'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+                    height: 24,
+                  ),
                   label: const Text('Sign in with Google'),
                   onPressed: _loginWithGoogle,
                   style: OutlinedButton.styleFrom(
@@ -239,10 +214,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
-                  // Replaced Image.asset with Image.network
                   icon: Image.network(
-                      'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-                      height: 24),
+                    'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+                    height: 24,
+                  ),
                   label: const Text('Sign in with DigiLocker'),
                   onPressed: _loginWithDigiLocker,
                   style: OutlinedButton.styleFrom(
@@ -267,19 +242,64 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  String _email = '', _password = '';
+  String _email = '', _password = '', _name = '', _username = '', _phone = '';
+  DateTime? _dob;
   bool _loading = false;
   bool _obscurePassword = true;
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_dob == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select Date of Birth')),
+      );
+      return;
+    }
     _formKey.currentState!.save();
     setState(() => _loading = true);
 
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _loading = false);
-      Navigator.pop(context);
-    });
+    try {
+      final authService = context.read<AuthService>();
+      final request = SignupRequest(
+        userName: _username,
+        name: _name,
+        email: _email,
+        dateOfBirth: _dob!.toIso8601String().split('T')[0],
+        phoneNumber: _phone,
+        password: _password,
+      );
+
+      await authService.signup(request);
+
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signup successful! Please login.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Signup failed: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _dob) {
+      setState(() {
+        _dob = picked;
+      });
+    }
   }
 
   @override
@@ -299,7 +319,6 @@ class _SignUpPageState extends State<SignUpPage> {
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               children: [
-                // Branding
                 Column(
                   children: [
                     Container(
@@ -308,15 +327,17 @@ class _SignUpPageState extends State<SignUpPage> {
                         color: Colors.blue.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child:
-                      const Icon(Icons.person_add, size: 48, color: Colors.blue),
+                      child: const Icon(
+                        Icons.person_add,
+                        size: 48,
+                        color: Colors.blue,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       'Create Account',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -325,10 +346,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 40),
-
-                // Form Card
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -341,14 +359,33 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          const SizedBox(height: 8),
-
-                          // Email Field
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (v) => v != null && v.isNotEmpty
+                                ? null
+                                : 'Name is required',
+                            onSaved: (v) => _name = v!.trim(),
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'Username',
+                              prefixIcon: Icon(Icons.alternate_email),
+                            ),
+                            validator: (v) => v != null && v.isNotEmpty
+                                ? null
+                                : 'Username is required',
+                            onSaved: (v) => _username = v!.trim(),
+                          ),
+                          const SizedBox(height: 20),
                           TextFormField(
                             decoration: const InputDecoration(
                               labelText: 'Email',
                               prefixIcon: Icon(Icons.email_outlined),
-                            ), // Fixed: Closing parenthesis for InputDecoration
+                            ),
                             keyboardType: TextInputType.emailAddress,
                             validator: (v) => v != null && v.contains('@')
                                 ? null
@@ -356,8 +393,33 @@ class _SignUpPageState extends State<SignUpPage> {
                             onSaved: (v) => _email = v!.trim(),
                           ),
                           const SizedBox(height: 20),
-
-                          // Password Field
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'Phone Number',
+                              prefixIcon: Icon(Icons.phone_outlined),
+                            ),
+                            keyboardType: TextInputType.phone,
+                            validator: (v) => v != null && v.length >= 10
+                                ? null
+                                : 'Invalid phone number',
+                            onSaved: (v) => _phone = v!.trim(),
+                          ),
+                          const SizedBox(height: 20),
+                          InkWell(
+                            onTap: () => _selectDate(context),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Date of Birth',
+                                prefixIcon: Icon(Icons.calendar_today),
+                              ),
+                              child: Text(
+                                _dob == null
+                                    ? 'Select Date'
+                                    : _dob!.toIso8601String().split('T')[0],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
                           TextFormField(
                             decoration: InputDecoration(
                               labelText: 'Password',
@@ -370,7 +432,8 @@ class _SignUpPageState extends State<SignUpPage> {
                                   color: Colors.grey,
                                 ),
                                 onPressed: () => setState(
-                                        () => _obscurePassword = !_obscurePassword),
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -380,28 +443,27 @@ class _SignUpPageState extends State<SignUpPage> {
                             onSaved: (v) => _password = v!,
                           ),
                           const SizedBox(height: 24),
-
-                          // Sign Up Button
                           ElevatedButton(
                             onPressed: _loading ? null : _submit,
                             child: _loading
                                 ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                color: Colors.white,
-                              ),
-                            )
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      color: Colors.white,
+                                    ),
+                                  )
                                 : const Text('Sign Up'),
                           ),
                           const SizedBox(height: 20),
-
-                          // Terms Agreement
                           const Text.rich(
                             TextSpan(
                               text: 'By signing up, you agree to our ',
-                              style: TextStyle(color: Colors.grey, fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
                               children: [
                                 TextSpan(
                                   text: 'Terms of Service',
