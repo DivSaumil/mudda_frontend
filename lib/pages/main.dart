@@ -79,9 +79,8 @@ void main() {
         ProxyProvider<AmazonImageService, AmazonImageRepository>(
           update: (_, service, __) => AmazonImageRepository(service: service),
         ),
-        ChangeNotifierProvider<UserProfileData>(
-          create: (BuildContext context) => UserProfileData(),
-        ),
+
+        // UserProfileData removed as part of ProfilePage revamp
       ],
       child: const RootApp(),
     ),

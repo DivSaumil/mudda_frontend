@@ -1,105 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../api/services/auth_service.dart';
 
-/// Data model representing a user's profile information.
-class UserProfile {
-  final String name;
-  final String username;
-  final String avatarUrl;
-  final String bio;
-  final String location;
-  final String joinedDate;
-  final int followingCount;
-  final int followersCount;
-
-  const UserProfile({
-    required this.name,
-    required this.username,
-    required this.avatarUrl,
-    required this.bio,
-    required this.location,
-    required this.joinedDate,
-    required this.followingCount,
-    required this.followersCount,
-  });
-}
-
-/// Data model representing a single issue (formerly post).
-class Issue {
-  final String authorName;
-  final String authorAvatarUrl;
-  final String content;
-  final String timeAgo;
-  final int replies;
-  final int retweets;
-  final int likes;
-
-  const Issue({
-    required this.authorName,
-    required this.authorAvatarUrl,
-    required this.content,
-    required this.timeAgo,
-    required this.replies,
-    required this.retweets,
-    required this.likes,
-  });
-}
-
-/// Data model representing a single media item (image).
-class MediaItem {
-  final String imageUrl;
-
-  const MediaItem({required this.imageUrl});
-}
-
-/// A ChangeNotifier to manage and provide user profile data, posts, and media.
-class UserProfileData extends ChangeNotifier {
-  // Initial profile data
-  final UserProfile _userProfile = const UserProfile(
-    name: 'John Doe',
-    username: '@johndoe',
-    avatarUrl: 'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-    bio: 'Flutter enthusiast. Coffee lover. Traveler.',
-    location: 'San Francisco, CA',
-    joinedDate: 'July 2025',
-    followingCount: 180,
-    followersCount: 1200,
-  );
-
-  // Initial dummy issues
-  final List<Issue> _issues;
-
-  // Initial dummy media items
-  final List<MediaItem> _media;
-
-  UserProfileData()
-      : _issues = List<Issue>.generate(
-    10,
-        (int index) => Issue(
-      authorName: 'John Doe',
-      authorAvatarUrl: 'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-      content: 'This is issue #${index + 1} from John Doe. Loving Flutter development!',
-      timeAgo: '${(index + 1) * 2}h',
-      replies: 5 + index,
-      retweets: 10 + index,
-      likes: 20 + index,
-    ),
-  ),
-        _media = List<MediaItem>.generate(
-          9,
-              (int index) => const MediaItem(
-            imageUrl: 'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-          ),
-        );
-
-  UserProfile get userProfile => _userProfile;
-  List<Issue> get issues => _issues;
-  List<MediaItem> get media => _media;
-
-// Add methods to modify data and call notifyListeners() if reactivity is needed later.
-}
-
-/// Displays the user profile page with header and tabs for posts and media.
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
@@ -107,13 +10,16 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late Future<Map<String, dynamic>> _profileFuture;
 
   @override
   void initState() {
     super.initState();
-  _tabController = TabController(length: 1, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
+    _profileFuture = context.read<AuthService>().getProfile();
   }
 
   @override
@@ -124,238 +30,417 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    // Access profile data using Provider
-    final UserProfileData profileData = context.watch<UserProfileData>();
-    final UserProfile userProfile = profileData.userProfile;
-  final List<Issue> issues = profileData.issues;
-
-  final double appBarBottomHeight = kTextTabBarHeight; // Height of the TabBar
-
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            SliverAppBar(
-              // Show title only when scrolled up and collapsed
-              title: innerBoxIsScrolled
-                  ? Text(userProfile.name, style: Theme.of(context).textTheme.titleLarge)
-                  : null,
-              centerTitle: true,
-              pinned: true, // Keeps the TabBar pinned at the top when scrolled
-              floating: false, // Does not float back when scrolling down slightly
-              expandedHeight: 350.0, // Adjust this value to fit the ProfileHeader content + AppBar height
-              flexibleSpace: FlexibleSpaceBar(
-                // The ProfileHeader content that scrolls away
-                background: ProfileHeader(userProfile: userProfile),
-              ),
-              bottom: PreferredSize(
-                preferredSize: Size.fromHeight(appBarBottomHeight),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: Colors.blue,
-                  // Use theme colors for tab labels
-                  labelColor: Theme.of(context).tabBarTheme.labelColor,
-                  unselectedLabelColor: Theme.of(context).tabBarTheme.unselectedLabelColor,
-                  tabs: const <Tab>[
-                    Tab(text: 'Issues'),
-                  ],
-                ),
-              ),
-            ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: <Widget>[
-            IssueList(issues: issues),
-          ],
-        ),
-      ),
-    );
-  }
-}
+      backgroundColor: const Color(0xFFF5F7FA), // Light greyish blue background
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Error loading profile: ${snapshot.error}'),
+            );
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text('No profile data found'));
+          }
 
-/// Displays the header section of the user profile.
-class ProfileHeader extends StatelessWidget {
-  final UserProfile userProfile;
+          final userData = snapshot.data!;
+          // Mocking missing fields for now
+          final String name = userData['name'] ?? 'Unknown User';
+          final String username = userData['userName'] ?? '@unknown';
+          final String bio =
+              "Passionate about changing the world, one issue at a time. 🌍✨";
+          final String avatarUrl = "https://i.pravatar.cc/300"; // Placeholder
+          final String location = "Mumbai, India";
+          final int followers = 1205;
+          final int following = 450;
 
-  const ProfileHeader({Key? key, required this.userProfile}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: NetworkImage(userProfile.avatarUrl),
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: () {
-                  // The button is functional but does not perform any action yet.
-                },
-                child: const Text('Edit Profile'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            userProfile.name,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            userProfile.username,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            userProfile.bio,
-            style: const TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              const Icon(Icons.location_on, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(userProfile.location, style: const TextStyle(color: Colors.grey)),
-              const SizedBox(width: 16),
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text('Joined ${userProfile.joinedDate}', style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Text('${userProfile.followingCount} ', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Text('Following'),
-              const SizedBox(width: 16),
-              Text('${userProfile.followersCount} ', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Text('Followers'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(), // Keep divider as it separates header content from tab content
-        ],
-      ),
-    );
-  }
-}
-
-/// Displays a scrollable list of issues.
-class IssueList extends StatelessWidget {
-  final List<Issue> issues;
-
-  const IssueList({Key? key, required this.issues}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: issues.length,
-      separatorBuilder: (BuildContext context, int index) => const Divider(),
-      itemBuilder: (BuildContext context, int index) {
-        final Issue issue = issues[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverAppBar(
+                  expandedHeight: 440.0,
+                  floating: false,
+                  pinned: true,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundImage: NetworkImage(issue.authorAvatarUrl),
+                        // Dynamic Gradient Background
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF6A11CB), // Deep Purple
+                                Color(0xFF2575FC), // Blue
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              issue.authorName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                          ],
+                          ),
                         ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz),
-                          onSelected: (String value) {
-                            // TODO: Implement report/flag logic
-                          },
-                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'report',
-                              child: ListTile(
-                                leading: Icon(Icons.flag),
-                                title: Text('Report/Flag'),
+                        // Decorative Circles
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 50,
+                          left: -30,
+                          child: Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ),
+                        ),
+                        // Glassmorphism Content Container
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              bottom:
+                                  80, // Increased bottom margin to clear TabBar
+                              top: 20,
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Avatar
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 3,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.2,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ],
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 45,
+                                        backgroundImage: NetworkImage(
+                                          avatarUrl,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Name & Username
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      '@$username',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Bio
+                                    Text(
+                                      bio,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.white.withOpacity(0.9),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    // Stats Row
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildStatItem("Followers", followers),
+                                        Container(
+                                          height: 20,
+                                          width: 1,
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
+                                        _buildStatItem("Following", following),
+                                        Container(
+                                          height: 20,
+                                          width: 1,
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
+                                        _buildStatItem(
+                                          "Location",
+                                          location,
+                                          isText: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(issue.content, style: const TextStyle(height: 1.4)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: <Widget>[
-                        // Comment button removed (already have comment box)
-                        const SizedBox(width: 16),
-                        const Icon(Icons.repeat, size: 16),
-                        const SizedBox(width: 4),
-                        Text(issue.retweets.toString(), style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.emoji_symbols, size: 16), // Raised Fist alternative
-                        const SizedBox(width: 4),
-                        Text(issue.likes.toString(), style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.share, size: 16),
+                  ),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(60),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(30),
+                        ),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        labelColor: const Color(0xFF6A11CB),
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: const Color(0xFF6A11CB),
+                        indicatorWeight: 3,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        tabs: const [
+                          Tab(text: "Issues"),
+                          Tab(text: "Media"),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [_buildIssuesTab(), _buildMediaTab()],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, dynamic value, {bool isText = false}) {
+    return Column(
+      children: [
+        Text(
+          isText ? value.toString() : _formatCount(value),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.7),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCount(int count) {
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}k';
+    }
+    return count.toString();
+  }
+
+  Widget _buildIssuesTab() {
+    // Mock Data for Issues
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 20,
+                      backgroundImage: NetworkImage(
+                        "https://i.pravatar.cc/300",
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Pothole on Main St.",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          "2 hours ago",
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        "High Priority",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            );
-      },
-    );
-  }
-}
-
-/// Displays a grid of media items.
-class MediaGrid extends StatelessWidget {
-  final List<MediaItem> mediaItems;
-
-  const MediaGrid({Key? key, required this.mediaItems}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
-      ),
-      itemCount: mediaItems.length,
-      itemBuilder: (BuildContext context, int index) {
-        final MediaItem mediaItem = mediaItems[index];
-        return Image.network(
-          mediaItem.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) => Container(
-            color: Colors.grey[200],
-            child: const Icon(Icons.broken_image),
+                const SizedBox(height: 12),
+                Text(
+                  "This pothole has been here for weeks and it's getting bigger. Someone needs to fix this ASAP!",
+                  style: TextStyle(color: Colors.grey[800], height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    "https://picsum.photos/seed/${index + 100}/600/300",
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildActionChip(Icons.thumb_up_alt_outlined, "245"),
+                    _buildActionChip(Icons.comment_outlined, "42"),
+                    _buildActionChip(Icons.share_outlined, "Share"),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMediaTab() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: 12,
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            "https://picsum.photos/seed/${index + 200}/300/300",
+            fit: BoxFit.cover,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionChip(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[600]),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
