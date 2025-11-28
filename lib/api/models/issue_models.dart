@@ -47,7 +47,10 @@ class IssueResponse {
     return IssueResponse(
       id: parseId(json['id']),
       title: (json['title'] as String?) ?? '',
-      content: (json['content'] as String?) ?? '', // Might be missing in list
+      content:
+          (json['content'] as String?) ??
+          (json['description'] as String?) ??
+          '',
       mediaUrls: parseMediaUrls(json['media_urls']),
       voteCount: (json['vote_count'] as int?) ?? 0,
       comments:
@@ -56,6 +59,7 @@ class IssueResponse {
       fullContent:
           (json['fullContent'] as String?) ??
           (json['content'] as String?) ??
+          (json['description'] as String?) ??
           '',
       status: (json['status'] as String?) ?? 'PENDING',
       createdAt:

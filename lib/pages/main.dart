@@ -460,6 +460,7 @@ class _HomePageState extends State<HomePage> {
           post: _selectedPost!,
           voteRepository: _voteRepository,
           commentRepository: _commentRepository,
+          issueRepository: _issueRepository,
           onClose: _closeDetailPane,
         );
       },
@@ -859,6 +860,7 @@ class PostDetailPane extends StatefulWidget {
   final IssueResponse post;
   final VoteRepository voteRepository;
   final CommentRepository commentRepository;
+  final IssueRepository issueRepository;
   final VoidCallback onClose;
 
   const PostDetailPane({
@@ -866,6 +868,7 @@ class PostDetailPane extends StatefulWidget {
     required this.post,
     required this.voteRepository,
     required this.commentRepository,
+    required this.issueRepository,
     required this.onClose,
   });
 
@@ -881,11 +884,35 @@ class _PostDetailPaneState extends State<PostDetailPane> {
   List<CommentResponse> _comments = [];
   bool _isLoadingComments = false;
   bool _isPostingComment = false;
+  IssueResponse? _fullIssue;
+  bool _isLoadingDetails = true;
 
   @override
   void initState() {
     super.initState();
+    _loadIssueDetails();
     _loadComments();
+  }
+
+  Future<void> _loadIssueDetails() async {
+    try {
+      final issue = await widget.issueRepository.getIssue(widget.post.id);
+      if (mounted) {
+        setState(() {
+          _fullIssue = issue;
+          _isLoadingDetails = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading issue details: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingDetails = false;
+          // Fallback to passed post data if fetch fails
+          _fullIssue = widget.post;
+        });
+      }
+    }
   }
 
   @override
@@ -1011,42 +1038,69 @@ class _PostDetailPaneState extends State<PostDetailPane> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.post.firstImageUrl != null)
-                      Hero(
-                        tag: 'post_image_${widget.post.id}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            widget.post.firstImageUrl!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              height: 200,
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: Icon(Icons.broken_image),
+                    if (widget.post.mediaUrls.isNotEmpty)
+                      SizedBox(
+                        height: 250,
+                        child: PageView.builder(
+                          itemCount: widget.post.mediaUrls.length,
+                          itemBuilder: (context, index) {
+                            return Hero(
+                              tag: 'post_image_${widget.post.id}_$index',
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    widget.post.mediaUrls[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                     const SizedBox(height: 20),
                     Text(
-                      widget.post.title,
+                      _fullIssue?.title ?? widget.post.title,
                       style: Theme.of(
                         context,
                       ).textTheme.titleLarge?.copyWith(height: 1.3),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      widget.post.fullContent.isNotEmpty
-                          ? widget.post.fullContent
-                          : widget.post.content,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 16,
-                        height: 1.6,
+                    const Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    if (_isLoadingDetails)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else
+                      Text(
+                        _fullIssue?.fullContent.isNotEmpty == true
+                            ? _fullIssue!.fullContent
+                            : (_fullIssue?.content.isNotEmpty == true
+                                  ? _fullIssue!.content
+                                  : 'No description provided.'),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 16,
+                          height: 1.6,
+                        ),
+                      ),
                     const SizedBox(height: 32),
 
                     const Text(
