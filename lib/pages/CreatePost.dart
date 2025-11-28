@@ -149,22 +149,37 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
         issueStatus: 'PENDING',
       );
 
-      await issueRepository.createIssue(request);
+      final issueResponse = await issueRepository.createIssue(request);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Issue created successfully!')),
+          SnackBar(
+            content: Text('✅ Issue created successfully! (ID: ${issueResponse.id})'),
+            duration: const Duration(seconds: 2),
+          ),
         );
-        Navigator.pop(context);
+        // Wait a bit before popping to ensure snackbar is visible
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error creating issue: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ Failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

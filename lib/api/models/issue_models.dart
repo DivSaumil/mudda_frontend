@@ -109,8 +109,8 @@ class CreateIssueRequest {
       'content': content,
       'description': content, // Mapping content to description as required
       'media_urls': mediaUrls,
-      if (categoryId != null) 'issue_category_id': categoryId,
-      if (locationId != null) 'location_id': locationId,
+      if (categoryId != null) 'categoryId': categoryId,
+      if (locationId != null) 'locationId': locationId,
       'severity_score': severityScore,
       'urgency_flag': urgencyFlag,
       'issue_status': issueStatus,

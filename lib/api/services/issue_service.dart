@@ -19,7 +19,61 @@ class IssueService {
   Future<IssueResponse> createIssue(CreateIssueRequest request) async {
     try {
       final response = await _dio.post('/issues', data: request.toJson());
-      return IssueResponse.fromJson(response.data);
+      
+      // Check status code
+      if (response.statusCode != null && 
+          response.statusCode! >= 200 && 
+          response.statusCode! < 300) {
+        final data = response.data;
+
+        // Handle null or empty response
+        if (data == null || (data is String && data.trim().isEmpty)) {
+          // Success but no body - return a minimal response
+          return _issueFromRequest(request);
+        }
+
+        // Try to parse as Map
+        Map<String, dynamic> jsonData;
+        if (data is Map<String, dynamic>) {
+          jsonData = data;
+        } else if (data is String) {
+          final trimmed = data.trim();
+          if (trimmed.isEmpty) {
+            return _issueFromRequest(request);
+          }
+          try {
+            jsonData = jsonDecode(trimmed) as Map<String, dynamic>;
+          } catch (e) {
+            throw Exception(
+              'Failed to parse response JSON: $e. Response: $trimmed',
+            );
+          }
+        } else {
+          throw Exception(
+            'Unexpected response type: ${data.runtimeType}. Response: $data',
+          );
+        }
+
+        // Parse the issue response with error handling
+        try {
+          return IssueResponse.fromJson(jsonData);
+        } catch (e) {
+          throw Exception(
+            'Failed to parse IssueResponse from JSON: $e. Data: $jsonData',
+          );
+        }
+      } else {
+        throw Exception(
+          'Server returned status ${response.statusCode}: ${response.data}',
+        );
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(
+          'Failed to create issue: ${e.response?.statusCode} - ${e.response?.data}',
+        );
+      }
+      throw Exception('Failed to create issue: ${e.message}');
     } catch (e) {
       throw Exception('Failed to create issue: $e');
     }
@@ -81,5 +135,21 @@ class IssueService {
     } catch (e) {
       throw Exception('Failed to fetch clusters: $e');
     }
+  }
+
+  IssueResponse _issueFromRequest(CreateIssueRequest request) {
+    return IssueResponse(
+      id: 0,
+      title: request.title,
+      content: request.content,
+      mediaUrls: request.mediaUrls,
+      voteCount: 0,
+      comments: 0,
+      fullContent: request.content,
+      status: request.issueStatus,
+      createdAt: DateTime.now().toIso8601String(),
+      hasUserVoted: false,
+      canUserVote: true,
+    );
   }
 }

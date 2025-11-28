@@ -60,8 +60,8 @@ class CreateLocationRequest {
   });
 
   Map<String, dynamic> toJson() => {
-    'pinCode': pinCode,
-    'addressLine': addressLine,
+    'pin_code': pinCode,
+    'address_line': addressLine,
     'state': state,
     'city': city,
     'coordinate': coordinate.toJson(),
