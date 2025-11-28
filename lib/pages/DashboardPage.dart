@@ -91,7 +91,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     // Width calculation to ensure a peek of the next card
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double cardWidth = screenWidth - 40; // Leaves 20px padding on each side roughly
+    final double cardWidth =
+        screenWidth - 40; // Leaves 20px padding on each side roughly
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -123,31 +124,34 @@ class _DashboardPageState extends State<DashboardPage> {
               height: 240,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                physics: const PageScrollPhysics(), // Enables the snapping effect
-                padding: const EdgeInsets.symmetric(horizontal: 16), // Padding for the list start/end
+                physics:
+                    const PageScrollPhysics(), // Enables the snapping effect
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ), // Padding for the list start/end
                 children: [
                   // Card 1: Resolution Rate
                   Container(
                     width: cardWidth,
-                    margin: const EdgeInsets.only(right: 12), // Space between cards
-                    child: _buildAnalyticsCard(
-                      child: _buildResolutionRate(),
-                    ),
+                    margin: const EdgeInsets.only(
+                      right: 12,
+                    ), // Space between cards
+                    child: _buildAnalyticsCard(child: _buildResolutionRate()),
                   ),
 
                   // Card 2: Top Issues
                   Container(
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 12),
-                    child: _buildAnalyticsCard(
-                      child: _buildTopCategories(),
-                    ),
+                    child: _buildAnalyticsCard(child: _buildTopCategories()),
                   ),
 
                   // Card 3: Quick Stats
                   Container(
                     width: cardWidth,
-                    margin: const EdgeInsets.only(right: 4), // Last item needs less margin
+                    margin: const EdgeInsets.only(
+                      right: 4,
+                    ), // Last item needs less margin
                     child: _buildAnalyticsCard(
                       color: Colors.blue.shade600,
                       child: _buildQuickStat(
@@ -170,7 +174,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.redAccent.shade200, Colors.redAccent.shade400],
+                    colors: [
+                      Colors.redAccent.shade200,
+                      Colors.redAccent.shade400,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -189,7 +196,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     onTap: _navigateToCreateIssue,
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
                       child: Row(
                         children: [
                           Container(
@@ -198,7 +208,11 @@ class _DashboardPageState extends State<DashboardPage> {
                               color: Colors.white.withOpacity(0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.campaign_outlined, color: Colors.white, size: 24),
+                            child: const Icon(
+                              Icons.campaign_outlined,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           const Column(
@@ -222,7 +236,11 @@ class _DashboardPageState extends State<DashboardPage> {
                             ],
                           ),
                           const Spacer(),
-                          const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ],
                       ),
                     ),
@@ -236,7 +254,11 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.map_outlined, size: 20, color: Colors.blueGrey),
+                  const Icon(
+                    Icons.map_outlined,
+                    size: 20,
+                    color: Colors.blueGrey,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     "Live Issue Map",
@@ -291,7 +313,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.example.mudda_frontend',
                         ),
                         MarkerLayer(
@@ -302,7 +325,10 @@ class _DashboardPageState extends State<DashboardPage> {
                               height: 60,
                               child: GestureDetector(
                                 onTap: () => _showAreaDetails(context, issue),
-                                child: _buildAnimatedMarker(issue.totalIssues, issue.severity),
+                                child: _buildAnimatedMarker(
+                                  issue.totalIssues,
+                                  issue.severity,
+                                ),
                               ),
                             );
                           }).toList(),
@@ -369,7 +395,11 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               const Text(
                 "Resolution Rate",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -383,31 +413,37 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 4),
               Text(
                 "$_solvedIssues Issues Solved",
-                style: TextStyle(fontSize: 13, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
         ),
         Expanded(
           flex: 3,
-          child: SizedBox(
-            height: 80,
-            width: 80,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: 1,
-                  color: Colors.grey.shade100,
-                  strokeWidth: 10,
-                ),
-                CircularProgressIndicator(
-                  value: percentage,
-                  color: Colors.greenAccent.shade700,
-                  strokeWidth: 10,
-                  strokeCap: StrokeCap.round,
-                ),
-              ],
+          child: Center(
+            child: SizedBox(
+              height: 80,
+              width: 80,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CircularProgressIndicator(
+                    value: 1,
+                    color: Colors.grey.shade100,
+                    strokeWidth: 10,
+                  ),
+                  CircularProgressIndicator(
+                    value: percentage,
+                    color: Colors.greenAccent.shade700,
+                    strokeWidth: 10,
+                    strokeCap: StrokeCap.round,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -424,7 +460,11 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             const Text(
               "Top Issues",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
             ),
             Text(
               "Total: $_totalIssues",
@@ -454,7 +494,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     flex: 2,
                     child: Text(
                       cat['label'],
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -472,19 +515,28 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(width: 12),
                   Text(
                     "${cat['count']}",
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               );
             }).toList(),
           ),
-        )
+        ),
       ],
     );
   }
 
-  Widget _buildQuickStat(String title, String value, IconData icon,
-      {Color textColor = Colors.black, Color subtextColor = Colors.grey}) {
+  Widget _buildQuickStat(
+    String title,
+    String value,
+    IconData icon, {
+    Color textColor = Colors.black,
+    Color subtextColor = Colors.grey,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -619,12 +671,18 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       Text(
                         "Last updated: 2m ago",
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: _getSeverityColor(data.severity).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -645,12 +703,20 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Expanded(
                     child: _buildDetailBox(
-                        "Top Issue", data.topIssue, Icons.warning_amber, Colors.orange),
+                      "Top Issue",
+                      data.topIssue,
+                      Icons.warning_amber,
+                      Colors.orange,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildDetailBox(
-                        "Total", "${data.totalIssues}", Icons.assignment, Colors.blue),
+                      "Total",
+                      "${data.totalIssues}",
+                      Icons.assignment,
+                      Colors.blue,
+                    ),
                   ),
                 ],
               ),
@@ -681,7 +747,12 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDetailBox(String label, String value, IconData icon, Color color) {
+  Widget _buildDetailBox(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -700,16 +771,13 @@ class _DashboardPageState extends State<DashboardPage> {
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
+              overflow: TextOverflow.ellipsis,
             ),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),

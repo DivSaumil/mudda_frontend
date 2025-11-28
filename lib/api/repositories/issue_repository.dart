@@ -8,11 +8,25 @@ class IssueRepository {
 
   Future<List<IssueResponse>> fetchIssues({
     IssueFilterRequest? filter,
+    String? category,
     int page = 0,
     int size = 20,
   }) async {
-    final pageData =
-        await service.getAllIssues(filter: filter, page: page, size: size);
+    // If category is provided, ensure it's added to the filter
+    IssueFilterRequest requestFilter = filter ?? IssueFilterRequest();
+    if (category != null && category.isNotEmpty && category != 'All') {
+      requestFilter = IssueFilterRequest(
+        status: requestFilter.status,
+        severity: requestFilter.severity,
+        category: category,
+      );
+    }
+
+    final pageData = await service.getAllIssues(
+      filter: requestFilter,
+      page: page,
+      size: size,
+    );
     return pageData.issues;
   }
 

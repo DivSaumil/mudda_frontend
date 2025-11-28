@@ -10,6 +10,7 @@ class IssueResponse {
   final String createdAt;
   final bool hasUserVoted;
   final bool canUserVote;
+  final String username;
 
   IssueResponse({
     required this.id,
@@ -23,6 +24,7 @@ class IssueResponse {
     required this.createdAt,
     required this.hasUserVoted,
     required this.canUserVote,
+    this.username = 'Anonymous Citizen',
   });
 
   // Helper to get the first image URL if available
@@ -66,6 +68,7 @@ class IssueResponse {
           (json['created_at'] as String?) ?? DateTime.now().toIso8601String(),
       hasUserVoted: (json['has_user_voted'] as bool?) ?? false,
       canUserVote: (json['can_user_vote'] as bool?) ?? false,
+      username: (json['username'] as String?) ?? 'Anonymous Citizen',
     );
   }
 
@@ -82,6 +85,7 @@ class IssueResponse {
       'created_at': createdAt,
       'has_user_voted': hasUserVoted,
       'can_user_vote': canUserVote,
+      'username': username,
     };
   }
 }
@@ -141,13 +145,15 @@ class UpdateIssueRequest {
 class IssueFilterRequest {
   final String? status;
   final String? severity;
+  final String? category;
 
-  IssueFilterRequest({this.status, this.severity});
+  IssueFilterRequest({this.status, this.severity, this.category});
 
   Map<String, dynamic> toJson() {
     return {
       if (status != null) 'status': status,
       if (severity != null) 'severity': severity,
+      if (category != null) 'category': category,
     };
   }
 }

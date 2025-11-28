@@ -412,6 +412,7 @@ class _HomePageState extends State<HomePage> {
       final newPosts = await _issueRepository.fetchIssues(
         page: _page,
         size: 20,
+        category: _categories[_selectedCategory],
       );
       setState(() {
         _posts.addAll(newPosts);
@@ -596,6 +597,30 @@ class _PostCardState extends State<PostCard>
     _hasVoted = widget.post.hasUserVoted;
   }
 
+  String _formatTimeAgo(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 365) {
+        return '${(difference.inDays / 365).floor()}y ago';
+      } else if (difference.inDays > 30) {
+        return '${(difference.inDays / 30).floor()}mo ago';
+      } else if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
+  }
+
   Future<void> _handleVote() async {
     if (_isVoting) return;
     setState(() => _isVoting = true);
@@ -690,15 +715,15 @@ class _PostCardState extends State<PostCard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Anonymous Citizen', // Placeholder
+                        Text(
+                          widget.post.username,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
                         ),
                         Text(
-                          '2 hrs ago', // Placeholder
+                          _formatTimeAgo(widget.post.createdAt),
                           style: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: 12,
@@ -1369,6 +1394,17 @@ class AppDrawer extends StatelessWidget {
             'Help & Support',
             () => Navigator.pop(context),
           ),
+          const Divider(indent: 16, endIndent: 16),
+          _buildDrawerItem(Icons.logout_rounded, 'Sign Out', () async {
+            Navigator.pop(context);
+            await context.read<AuthService>().logout();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AuthGate()),
+                (route) => false,
+              );
+            }
+          }),
         ],
       ),
     );
