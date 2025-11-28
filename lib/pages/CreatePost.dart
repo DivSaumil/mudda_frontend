@@ -1,9 +1,16 @@
+import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
-import 'package:mudda_frontend/api/models/issue_models.dart';
-import 'package:mudda_frontend/api/repositories/issue_repository.dart';
-import 'package:mudda_frontend/api/services/issue_service.dart';
-import 'package:mudda_frontend/api/config/constants.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
+import 'package:mudda_frontend/api/models/location_models.dart';
+import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/services/location_service.dart';
+import 'package:mudda_frontend/pages/LocationPickerPage.dart';
+import 'package:geocoding/geocoding.dart';
 
 class CreateIssuePage extends StatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);
@@ -13,14 +20,19 @@ class CreateIssuePage extends StatefulWidget {
 }
 
 class _CreateIssuePageState extends State<CreateIssuePage> {
-  final TextEditingController _headlineController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-  // Removed tag input controller (hashtags feature removed)
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
-  bool _hasContent = false;
-  List<String> _attachedImages = <String>[];
-  // Removed tags list (hashtags feature removed)
+  int _currentStep = 0;
+  bool _isLoading = false;
+
+  // Issue Data
   String? _selectedCategory;
+  double _severity = 1.0;
+  bool _isUrgent = false;
+  LatLng? _selectedLocation;
+  List<XFile> _selectedImages = [];
 
   final Map<String, int> _categoryMap = {
     'Sanitation': 1,
@@ -36,323 +48,420 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
   };
 
   @override
-  void initState() {
-    super.initState();
-    _contentController.addListener(_updateContentStatus);
-    _headlineController.addListener(_updateContentStatus);
-  }
-
-  @override
   void dispose() {
-    _headlineController.dispose();
-    _contentController.dispose();
-    // _tagInputController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
-  void _updateContentStatus() {
-    setState(() {
-      _hasContent =
-          _headlineController.text.trim().isNotEmpty ||
-          _contentController.text.trim().isNotEmpty ||
-          _attachedImages.isNotEmpty ||
-          // _tags.isNotEmpty ||
-          _selectedCategory != null;
-    });
+  Future<void> _pickImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() {
+        _selectedImages.addAll(images);
+      });
+    }
   }
 
-  void _handlePost() async {
-    final String headline = _headlineController.text.trim();
-    final String content = _contentController.text.trim();
+  Future<void> _pickLocation() async {
+    final LatLng? result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LocationPickerPage()),
+    );
 
-    if (_hasContent) {
-      try {
-        // Build CreateIssueRequest object
-        CreateIssueRequest request = CreateIssueRequest(
-          title: headline.isNotEmpty ? headline : content,
-          content: content.isNotEmpty ? content : headline,
-          imageUrl: _attachedImages.isNotEmpty ? _attachedImages.first : null,
-          categoryId: _selectedCategory != null
-              ? _categoryMap[_selectedCategory]
-              : null,
-          locationId: 1, // Default location ID for now
-        );
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result;
+      });
+    }
+  }
 
-        // Initialize service and repository
-        final IssueService service = context.read<IssueService>();
-        final IssueRepository repository = IssueRepository(service: service);
-
-        // Create issue
-        await repository.createIssue(request);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Issue created successfully")),
-          );
-          Navigator.pop(context); // close the page
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("❌ Failed to create issue: ${e.toString()}"),
-            ),
-          );
-        }
-      }
+  Future<void> _submitIssue() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a location')));
+      return;
     }
 
-    //   final String headline = _headlineController.text.trim();
-    //   final String content = _contentController.text.trim();
+    setState(() => _isLoading = true);
 
-    //   if (headline.isNotEmpty ||
-    //       content.isNotEmpty ||
-    //       _attachedImages.isNotEmpty ||
-    // // _tags.isNotEmpty ||
-    //       _selectedCategory != null) {
-    //     final StringBuffer snackBarMessage = StringBuffer('Post submitted!\n');
-    //     if (headline.isNotEmpty) {
-    //       snackBarMessage.write('Headline: $headline\n');
-    //     }
-    //     if (content.isNotEmpty) {
-    //       snackBarMessage.write('Content: $content\n');
-    //     }
-    //     if (_attachedImages.isNotEmpty) {
-    //       snackBarMessage.write('Images: ${_attachedImages.length}\n');
-    //     }
-    // // Removed tags from snackbar
-    //     if (_selectedCategory != null) {
-    //       snackBarMessage.write('Category: $_selectedCategory\n');
-    //     }
+    try {
+      // 1. Upload Images
+      List<String> uploadedImageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        final amazonRepo = context.read<AmazonImageRepository>();
+        final uploadedImages = await amazonRepo.uploadImages(_selectedImages);
+        uploadedImageUrls = uploadedImages.map((img) => img.imageUrl).toList();
+      }
 
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(content: Text(snackBarMessage.toString())),
-    //     );
-    //   }
-  }
+      // 2. Create Location
+      final locationService = context.read<LocationService>();
 
-  void _addImage() {
-    setState(() {
-      _attachedImages.add(
-        'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+      // Fetch address details from coordinates
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _selectedLocation!.latitude,
+        _selectedLocation!.longitude,
       );
-      _updateContentStatus();
-    });
-  }
 
-  void _removeImage(int index) {
-    setState(() {
-      _attachedImages.removeAt(index);
-      _updateContentStatus();
-    });
-  }
+      String pinCode = "000000";
+      String addressLine = "Unknown Address";
+      String state = "Unknown State";
+      String city = "Unknown City";
 
-  // Removed tag add/remove methods
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        pinCode = place.postalCode ?? "000000";
+        if (pinCode.isEmpty) pinCode = "000000";
+        addressLine =
+            "${place.street}, ${place.subLocality}, ${place.locality}";
+        state = place.administrativeArea ?? "Unknown State";
+        city = place.locality ?? place.subAdministrativeArea ?? "Unknown City";
+      }
+
+      final locationResponse = await locationService.createLocation(
+        CreateLocationRequest(
+          pinCode: pinCode,
+          addressLine: addressLine,
+          state: state,
+          city: city,
+          coordinate: CoordinateDTO(
+            latitude: _selectedLocation!.latitude,
+            longitude: _selectedLocation!.longitude,
+          ),
+        ),
+      );
+
+      // 3. Create Issue
+      final issueService = context.read<IssueService>();
+      final issueRepository = IssueRepository(service: issueService);
+
+      final request = CreateIssueRequest(
+        title: _titleController.text.trim(),
+        content: _descriptionController.text.trim(),
+        mediaUrls: uploadedImageUrls,
+        categoryId: _categoryMap[_selectedCategory],
+        locationId: locationResponse.id,
+        severityScore: _severity.round(),
+        urgencyFlag: _isUrgent,
+        issueStatus: 'PENDING',
+      );
+
+      await issueRepository.createIssue(request);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Issue created successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Issue'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: _hasContent ? _handlePost : null,
-            child: Text(
-              'Submit',
-              style: TextStyle(
-                color: _hasContent
-                    ? Theme.of(context).primaryColor
-                    : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Headline Input
-            TextField(
-              controller: _headlineController,
-              maxLines: null,
-              decoration: const InputDecoration(
-                hintText: "Add a headline (optional)",
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-              style: Theme.of(context).textTheme.headlineSmall,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const Divider(height: 24),
-            // Main Content Input
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _contentController,
-                    maxLines: null,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: "Description",
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Attached Images
-            if (_attachedImages.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: List<Widget>.generate(_attachedImages.length, (
-                      int index,
-                    ) {
-                      return Stack(
-                        alignment: Alignment.topRight,
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _attachedImages[index],
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => _removeImage(index),
-                              child: const CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.black54,
-                                child: Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+      appBar: AppBar(title: const Text('Report an Issue')),
+      body: Form(
+        key: _formKey,
+        child: Stepper(
+          type: StepperType.horizontal,
+          currentStep: _currentStep,
+          onStepContinue: () {
+            if (_currentStep < 2) {
+              setState(() => _currentStep += 1);
+            } else {
+              _submitIssue();
+            }
+          },
+          onStepCancel: () {
+            if (_currentStep > 0) {
+              setState(() => _currentStep -= 1);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          controlsBuilder: (context, details) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : details.onStepContinue,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
                               ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }),
+                            )
+                          : Text(_currentStep == 2 ? 'SUBMIT' : 'NEXT'),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  if (_currentStep > 0) ...[
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: _isLoading ? null : details.onStepCancel,
+                      child: const Text('BACK'),
+                    ),
+                  ],
                 ],
               ),
-
-            // Tags input and display removed
-            const SizedBox(height: 16),
-
-            // Category Selection
-            InputDecorator(
-              decoration: InputDecoration(
-                // Removed labelText to avoid overlap with DropdownButton's hint
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                prefixIcon: const Icon(Icons.category),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
+            );
+          },
+          steps: [
+            Step(
+              title: const Text('Details'),
+              isActive: _currentStep >= 0,
+              state: _currentStep > 0 ? StepState.complete : StepState.editing,
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Title',
+                      hintText: 'Brief summary of the issue',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Please enter a title' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Detailed explanation...',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Please enter a description' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _categoryMap.keys.map((String category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedCategory = val),
+                    validator: (value) =>
+                        value == null ? 'Please select a category' : null,
+                  ),
+                ],
               ),
-              isEmpty: _selectedCategory == null,
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCategory,
-                  isExpanded: true,
-                  hint: const Text('Select a category'),
-                  icon: const Icon(Icons.arrow_drop_down),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                      _updateContentStatus();
-                    });
-                  },
-                  items: _categoryMap.keys.map<DropdownMenuItem<String>>((
-                    String category,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                ),
+            ),
+            Step(
+              title: const Text('Specifics'),
+              isActive: _currentStep >= 1,
+              state: _currentStep > 1 ? StepState.complete : StepState.editing,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Severity Level',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Slider(
+                    value: _severity,
+                    min: 1,
+                    max: 10,
+                    divisions: 9,
+                    label: _severity.round().toString(),
+                    onChanged: (val) => setState(() => _severity = val),
+                  ),
+                  Text(
+                    'Level: ${_severity.round()} - ${_getSeverityLabel(_severity.round())}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 24),
+                  SwitchListTile(
+                    title: const Text('Is this urgent?'),
+                    subtitle: const Text('Requires immediate attention'),
+                    value: _isUrgent,
+                    onChanged: (val) => setState(() => _isUrgent = val),
+                  ),
+                ],
+              ),
+            ),
+            Step(
+              title: const Text('Evidence'),
+              isActive: _currentStep >= 2,
+              state: StepState.editing,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Location Section
+                  const Text(
+                    'Location',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: _pickLocation,
+                    child: Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[400]!),
+                      ),
+                      child: _selectedLocation == null
+                          ? const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.map, size: 40, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text('Tap to select location on map'),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 40,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Lat: ${_selectedLocation!.latitude.toStringAsFixed(4)}, Lng: ${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Text(
+                                  'Tap to change',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Images Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Images',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _pickImages,
+                        icon: const Icon(Icons.add_photo_alternate),
+                        label: const Text('Add Images'),
+                      ),
+                    ],
+                  ),
+                  if (_selectedImages.isNotEmpty)
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _selectedImages.length,
+                        itemBuilder: (context, index) {
+                          return Stack(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: FutureBuilder<Uint8List>(
+                                    future: _selectedImages[index]
+                                        .readAsBytes(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                              ConnectionState.done &&
+                                          snapshot.hasData) {
+                                        return Image.memory(
+                                          snapshot.data!,
+                                          fit: BoxFit.cover,
+                                        );
+                                      } else {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImages.removeAt(index);
+                                    });
+                                  },
+                                  child: const CircleAvatar(
+                                    radius: 10,
+                                    backgroundColor: Colors.black54,
+                                    child: Icon(
+                                      Icons.close,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.image),
-                onPressed: _addImage,
-                tooltip: 'Add Image',
-              ),
-              IconButton(
-                icon: const Icon(Icons.tag_faces),
-                onPressed: () {
-                  // TODO: Implement emoji/sticker functionality
-                },
-                tooltip: 'Add Emoji',
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.location_on, color: Colors.white),
-                label: const Text(
-                  'Add Location',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                onPressed: () {
-                  // TODO: Implement location functionality
-                },
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.more_horiz),
-                onPressed: () {
-                  // TODO: Implement more options
-                },
-                tooltip: 'More Options',
-              ),
-            ],
-          ),
-        ),
-      ),
     );
+  }
+
+  String _getSeverityLabel(int score) {
+    if (score <= 3) return 'Low';
+    if (score <= 7) return 'Medium';
+    return 'High';
   }
 }

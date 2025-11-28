@@ -85,16 +85,22 @@ class IssueResponse {
 class CreateIssueRequest {
   final String title;
   final String content;
-  final String? imageUrl;
+  final List<String> mediaUrls;
   final int? categoryId;
   final int? locationId;
+  final int severityScore;
+  final bool urgencyFlag;
+  final String issueStatus;
 
   CreateIssueRequest({
     required this.title,
     required this.content,
-    this.imageUrl,
+    this.mediaUrls = const [],
     this.categoryId,
     this.locationId,
+    this.severityScore = 1,
+    this.urgencyFlag = false,
+    this.issueStatus = 'PENDING',
   });
 
   Map<String, dynamic> toJson() {
@@ -102,9 +108,12 @@ class CreateIssueRequest {
       'title': title,
       'content': content,
       'description': content, // Mapping content to description as required
-      if (imageUrl != null) 'imageUrl': imageUrl,
-      if (categoryId != null) 'categoryId': categoryId,
-      if (locationId != null) 'locationId': locationId,
+      'media_urls': mediaUrls,
+      if (categoryId != null) 'issue_category_id': categoryId,
+      if (locationId != null) 'location_id': locationId,
+      'severity_score': severityScore,
+      'urgency_flag': urgencyFlag,
+      'issue_status': issueStatus,
     };
   }
 }

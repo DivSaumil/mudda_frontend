@@ -22,6 +22,8 @@ import 'package:mudda_frontend/api/services/user_service.dart';
 import 'package:mudda_frontend/api/services/category_service.dart';
 import 'package:mudda_frontend/api/services/location_service.dart';
 import 'package:mudda_frontend/api/services/role_service.dart';
+import 'package:mudda_frontend/api/services/amazon_service.dart';
+import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
 
 void main() {
   runApp(
@@ -70,6 +72,12 @@ void main() {
         ),
         ProxyProvider<Dio, RoleService>(
           update: (_, dio, __) => RoleService(dio),
+        ),
+        ProxyProvider<Dio, AmazonImageService>(
+          update: (_, dio, __) => AmazonImageService(dio),
+        ),
+        ProxyProvider<AmazonImageService, AmazonImageRepository>(
+          update: (_, service, __) => AmazonImageRepository(service: service),
         ),
         ChangeNotifierProvider<UserProfileData>(
           create: (BuildContext context) => UserProfileData(),

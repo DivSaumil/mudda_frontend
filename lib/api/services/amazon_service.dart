@@ -1,72 +1,54 @@
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/amazon_model.dart';
 
 class AmazonImageService {
-  final String baseUrl;
+  final Dio _dio;
 
-  AmazonImageService({required this.baseUrl});
+  AmazonImageService(this._dio);
 
   /// Get all bucket contents
   /// Returns a list of image file names
   Future<List<String>> getBucketContents() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/amazon/images'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((item) => item.toString()).toList();
-      } else {
-        throw Exception('Failed to get bucket contents: ${response.statusCode}');
-      }
+      final response = await _dio.get('/amazon/images');
+      final List<dynamic> jsonList = response.data;
+      return jsonList.map((item) => item.toString()).toList();
     } catch (e) {
-      throw Exception('Error fetching bucket contents: $e');
+      throw Exception('Failed to get bucket contents: $e');
     }
   }
 
   /// Upload one or more images to Amazon S3
   /// Returns a list of uploaded AmazonImage objects
-  Future<List<AmazonImage>> uploadImages(List<File> files) async {
+  Future<List<AmazonImage>> uploadImages(List<XFile> files) async {
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/api/v1/amazon/images'),
-      );
+      final formData = FormData();
 
-      // Add all files to the request
       for (var file in files) {
-        var multipartFile = await http.MultipartFile.fromPath(
-          'files',
-          file.path,
+        final bytes = await file.readAsBytes();
+        formData.files.add(
+          MapEntry(
+            'files',
+            MultipartFile.fromBytes(bytes, filename: file.name),
+          ),
         );
-        request.files.add(multipartFile);
       }
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final response = await _dio.post('/amazon/images', data: formData);
 
-      if (response.statusCode == 201) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList
-            .map((item) => AmazonImage.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Failed to upload images: ${response.statusCode}');
-      }
+      final List<dynamic> jsonList = response.data;
+      return jsonList
+          .map((item) => AmazonImage.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw Exception('Error uploading images: $e');
+      throw Exception('Failed to upload images: $e');
     }
   }
 
   /// Upload a single image to Amazon S3
   /// Returns the uploaded AmazonImage object
-  Future<AmazonImage> uploadImage(File file) async {
+  Future<AmazonImage> uploadImage(XFile file) async {
     final result = await uploadImages([file]);
     return result.first;
   }
@@ -75,23 +57,9 @@ class AmazonImageService {
   /// [fileName] is the name of the file to delete
   Future<void> deleteImage(String fileName) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/api/v1/amazon/images/$fileName'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 204) {
-        return; // Success
-      } else if (response.statusCode == 503) {
-        throw Exception('Service unavailable');
-      } else {
-        throw Exception('Failed to delete image: ${response.statusCode}');
-      }
+      await _dio.delete('/amazon/images/$fileName');
     } catch (e) {
-      throw Exception('Error deleting image: $e');
+      throw Exception('Failed to delete image: $e');
     }
   }
 }
-

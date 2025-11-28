@@ -6,6 +6,8 @@ class CommentResponse {
   final int likes;
   final int repliesCount;
   final String createdAt;
+  final int authorId;
+  final bool hasUserLiked;
 
   CommentResponse({
     required this.id,
@@ -15,29 +17,35 @@ class CommentResponse {
     required this.likes,
     required this.repliesCount,
     required this.createdAt,
+    required this.authorId,
+    required this.hasUserLiked,
   });
 
   factory CommentResponse.fromJson(Map<String, dynamic> json) {
     return CommentResponse(
-      id: json['id'],
-      issueId: json['issueId'],
-      content: json['content'],
-      parentCommentId: json['parentCommentId'],
-      likes: json['likes'],
-      repliesCount: json['repliesCount'] ?? 0,
-      createdAt: json['createdAt'],
+      id: json['comment_id'] ?? 0,
+      issueId: json['issue_id'] ?? 0,
+      content: json['text'] ?? '',
+      parentCommentId: json['parent_comment_id'],
+      likes: json['like_count'] ?? 0,
+      repliesCount: json['reply_count'] ?? 0,
+      createdAt: json['created_at'] ?? '',
+      authorId: json['author_id'] ?? 0,
+      hasUserLiked: json['has_user_liked'] ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'issueId': issueId,
-      'content': content,
-      if (parentCommentId != null) 'parentCommentId': parentCommentId,
-      'likes': likes,
-      'repliesCount': repliesCount,
-      'createdAt': createdAt,
+      'comment_id': id,
+      'issue_id': issueId,
+      'text': content,
+      if (parentCommentId != null) 'parent_comment_id': parentCommentId,
+      'like_count': likes,
+      'reply_count': repliesCount,
+      'created_at': createdAt,
+      'author_id': authorId,
+      'has_user_liked': hasUserLiked,
     };
   }
 }
@@ -57,8 +65,8 @@ class CommentLikeResponse {
 
   factory CommentLikeResponse.fromJson(Map<String, dynamic> json) {
     return CommentLikeResponse(
-      commentId: json['commentId'],
-      likes: json['likes'],
+      commentId: json['comment_id'] ?? 0,
+      likes: json['like_count'] ?? 0,
     );
   }
 }
@@ -75,12 +83,15 @@ class PageCommentDetailResponse {
   });
 
   factory PageCommentDetailResponse.fromJson(Map<String, dynamic> json) {
+    final page = json['page'] as Map<String, dynamic>?;
     return PageCommentDetailResponse(
-      comments: (json['comments'] as List)
-          .map((e) => CommentResponse.fromJson(e))
-          .toList(),
-      totalPages: json['totalPages'],
-      totalElements: json['totalElements'],
+      comments:
+          (json['content'] as List?)
+              ?.map((e) => CommentResponse.fromJson(e))
+              .toList() ??
+          [],
+      totalPages: page?['totalPages'] ?? json['totalPages'] ?? 0,
+      totalElements: page?['totalElements'] ?? json['totalElements'] ?? 0,
     );
   }
 }
@@ -97,12 +108,15 @@ class PageReplyResponse {
   });
 
   factory PageReplyResponse.fromJson(Map<String, dynamic> json) {
+    final page = json['page'] as Map<String, dynamic>?;
     return PageReplyResponse(
-      replies: (json['replies'] as List)
-          .map((e) => CommentResponse.fromJson(e))
-          .toList(),
-      totalPages: json['totalPages'],
-      totalElements: json['totalElements'],
+      replies:
+          (json['content'] as List?)
+              ?.map((e) => CommentResponse.fromJson(e))
+              .toList() ??
+          [],
+      totalPages: page?['totalPages'] ?? json['totalPages'] ?? 0,
+      totalElements: page?['totalElements'] ?? json['totalElements'] ?? 0,
     );
   }
 }

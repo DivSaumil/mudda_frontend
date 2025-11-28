@@ -18,6 +18,19 @@ class LocationService {
   Future<LocationResponse> createLocation(CreateLocationRequest request) async {
     try {
       final response = await _dio.post('/locations', data: request.toJson());
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+          'Failed to create location: ${response.statusCode} - ${response.data}',
+        );
+      }
+
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception(
+          'Invalid response format: Expected Map, got ${response.data.runtimeType} - Body: ${response.data}',
+        );
+      }
+
       return LocationResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to create location: $e');
