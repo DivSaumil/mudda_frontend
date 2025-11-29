@@ -38,8 +38,8 @@ void main() {
             final dio = Dio(
               BaseOptions(
                 baseUrl: '${AppConstants.baseUrl}/api/v1',
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 15),
+                connectTimeout: const Duration(seconds: 30),
+                receiveTimeout: const Duration(seconds: 30),
                 contentType: Headers.jsonContentType,
                 validateStatus: (status) => status! < 500,
               ),
@@ -266,16 +266,19 @@ class _MainAppScreenState extends State<MainAppScreen> {
         title: const Text('Mudda'),
         centerTitle: false,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade200, width: 2),
-            ),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(
-                'https://randomuser.me/api/portraits/men/1.jpg',
+          GestureDetector(
+            onTap: () => _onNavItemTapped(4),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade200, width: 2),
+              ),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundImage: NetworkImage(
+                  'https://randomuser.me/api/portraits/men/1.jpg',
+                ),
               ),
             ),
           ),

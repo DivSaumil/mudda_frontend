@@ -61,6 +61,7 @@ class _ProfilePageState extends State<ProfilePage>
               return [
                 SliverAppBar(
                   expandedHeight: 440.0,
+                  toolbarHeight: 0,
                   floating: false,
                   pinned: true,
                   backgroundColor: Colors.transparent,
