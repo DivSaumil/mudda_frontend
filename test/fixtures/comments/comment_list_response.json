@@ -1,0 +1,30 @@
+{
+    "content": [
+        {
+            "comment_id": 1,
+            "issue_id": 123,
+            "text": "This is a test comment",
+            "parent_comment_id": null,
+            "like_count": 5,
+            "reply_count": 2,
+            "created_at": "2024-01-15T11:00:00Z",
+            "author_id": 42,
+            "has_user_liked": false
+        },
+        {
+            "comment_id": 2,
+            "issue_id": 123,
+            "text": "I agree with this issue",
+            "parent_comment_id": null,
+            "like_count": 10,
+            "reply_count": 0,
+            "created_at": "2024-01-15T12:30:00Z",
+            "author_id": 55,
+            "has_user_liked": true
+        }
+    ],
+    "page": {
+        "totalPages": 1,
+        "totalElements": 2
+    }
+}

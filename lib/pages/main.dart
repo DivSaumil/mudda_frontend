@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
 import 'package:mudda_frontend/pages/LoginPage.dart';
 import 'package:mudda_frontend/pages/createPost.dart';
@@ -25,64 +26,76 @@ import 'package:mudda_frontend/api/services/role_service.dart';
 import 'package:mudda_frontend/api/services/amazon_service.dart';
 import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
 
+// New Riverpod-based auth (will replace old AuthGate)
+import 'package:mudda_frontend/features/auth/presentation/widgets/auth_gate.dart'
+    as riverpod_auth;
+import 'package:mudda_frontend/features/auth/application/auth_notifier.dart';
+import 'package:mudda_frontend/features/issues/presentation/screens/issue_feed_screen.dart';
+
+// New shared theme import (will be used once migration complete)
+// import 'package:mudda_frontend/shared/theme/app_theme.dart';
+
 void main() {
   runApp(
-    MultiProvider(
-      providers: [
-        Provider(create: (_) => StorageService()),
-        ProxyProvider<StorageService, AuthInterceptor>(
-          update: (_, storage, __) => AuthInterceptor(storage),
-        ),
-        ProxyProvider<AuthInterceptor, Dio>(
-          update: (_, interceptor, __) {
-            final dio = Dio(
-              BaseOptions(
-                baseUrl: '${AppConstants.baseUrl}/api/v1',
-                connectTimeout: const Duration(seconds: 30),
-                receiveTimeout: const Duration(seconds: 30),
-                contentType: Headers.jsonContentType,
-                validateStatus: (status) => status! < 500,
-              ),
-            );
-            dio.interceptors.add(interceptor);
-            return dio;
-          },
-        ),
-        ProxyProvider2<Dio, StorageService, AuthService>(
-          update: (_, dio, storage, __) =>
-              AuthService(dio: dio, storageService: storage),
-        ),
-        ProxyProvider<Dio, IssueService>(
-          update: (_, dio, __) => IssueService(dio),
-        ),
-        ProxyProvider<Dio, VoteService>(
-          update: (_, dio, __) => VoteService(dio),
-        ),
-        ProxyProvider<Dio, CommentService>(
-          update: (_, dio, __) => CommentService(dio),
-        ),
-        ProxyProvider<Dio, UserService>(
-          update: (_, dio, __) => UserService(dio),
-        ),
-        ProxyProvider<Dio, CategoryService>(
-          update: (_, dio, __) => CategoryService(dio),
-        ),
-        ProxyProvider<Dio, LocationService>(
-          update: (_, dio, __) => LocationService(dio),
-        ),
-        ProxyProvider<Dio, RoleService>(
-          update: (_, dio, __) => RoleService(dio),
-        ),
-        ProxyProvider<Dio, AmazonImageService>(
-          update: (_, dio, __) => AmazonImageService(dio),
-        ),
-        ProxyProvider<AmazonImageService, AmazonImageRepository>(
-          update: (_, service, __) => AmazonImageRepository(service: service),
-        ),
+    // Wrap with ProviderScope for Riverpod (coexists with Provider during migration)
+    ProviderScope(
+      child: MultiProvider(
+        providers: [
+          Provider(create: (_) => StorageService()),
+          ProxyProvider<StorageService, AuthInterceptor>(
+            update: (_, storage, __) => AuthInterceptor(storage),
+          ),
+          ProxyProvider<AuthInterceptor, Dio>(
+            update: (_, interceptor, __) {
+              final dio = Dio(
+                BaseOptions(
+                  baseUrl: '${AppConstants.baseUrl}/api/v1',
+                  connectTimeout: const Duration(seconds: 30),
+                  receiveTimeout: const Duration(seconds: 30),
+                  contentType: Headers.jsonContentType,
+                  validateStatus: (status) => status! < 500,
+                ),
+              );
+              dio.interceptors.add(interceptor);
+              return dio;
+            },
+          ),
+          ProxyProvider2<Dio, StorageService, AuthService>(
+            update: (_, dio, storage, __) =>
+                AuthService(dio: dio, storageService: storage),
+          ),
+          ProxyProvider<Dio, IssueService>(
+            update: (_, dio, __) => IssueService(dio),
+          ),
+          ProxyProvider<Dio, VoteService>(
+            update: (_, dio, __) => VoteService(dio),
+          ),
+          ProxyProvider<Dio, CommentService>(
+            update: (_, dio, __) => CommentService(dio),
+          ),
+          ProxyProvider<Dio, UserService>(
+            update: (_, dio, __) => UserService(dio),
+          ),
+          ProxyProvider<Dio, CategoryService>(
+            update: (_, dio, __) => CategoryService(dio),
+          ),
+          ProxyProvider<Dio, LocationService>(
+            update: (_, dio, __) => LocationService(dio),
+          ),
+          ProxyProvider<Dio, RoleService>(
+            update: (_, dio, __) => RoleService(dio),
+          ),
+          ProxyProvider<Dio, AmazonImageService>(
+            update: (_, dio, __) => AmazonImageService(dio),
+          ),
+          ProxyProvider<AmazonImageService, AmazonImageRepository>(
+            update: (_, service, __) => AmazonImageRepository(service: service),
+          ),
 
-        // UserProfileData removed as part of ProfilePage revamp
-      ],
-      child: const RootApp(),
+          // UserProfileData removed as part of ProfilePage revamp
+        ],
+        child: const RootApp(),
+      ),
     ),
   );
 }
@@ -146,7 +159,10 @@ class RootApp extends StatelessWidget {
           unselectedLabelColor: Colors.grey,
         ),
       ),
-      home: const AuthGate(),
+      // Use new Riverpod-based AuthGate
+      home: riverpod_auth.AuthGate(
+        authenticatedBuilder: (context) => const MainAppScreen(),
+      ),
     );
   }
 }
@@ -233,7 +249,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   final List<Widget> _screens = [
-    const HomePage(),
+    const IssueFeedScreen(),
     const Center(child: Text('Search Page - To be implemented')),
     const CreateIssuePage(),
     const AccountActivityPage(),
@@ -1323,7 +1339,7 @@ class _PostDetailPaneState extends State<PostDetailPane> {
   }
 }
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onActivityTap;
   final VoidCallback onDashboardTap;
@@ -1336,7 +1352,7 @@ class AppDrawer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -1398,14 +1414,9 @@ class AppDrawer extends StatelessWidget {
           ),
           const Divider(indent: 16, endIndent: 16),
           _buildDrawerItem(Icons.logout_rounded, 'Sign Out', () async {
-            Navigator.pop(context);
-            await context.read<AuthService>().logout();
-            if (context.mounted) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const AuthGate()),
-                (route) => false,
-              );
-            }
+            Navigator.pop(context); // Close drawer
+            await ref.read(authNotifierProvider.notifier).logout();
+            // AuthGate handles the redirect automatically
           }),
         ],
       ),

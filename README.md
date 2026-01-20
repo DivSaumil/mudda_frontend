@@ -12,6 +12,57 @@ Mudda Frontend is a Flutter application that serves as the user interface for th
 - Responsive UI for Android devices
 - Drawer menu for profile, settings, and support
 
+## Architecture
+
+This project uses a **feature-first modular architecture** with **Riverpod** for state management.
+
+### Project Structure
+
+```
+lib/
+├── api/                # API layer (services, repositories, models)
+│   ├── models/         # Data models
+│   ├── services/       # API service classes
+│   └── repositories/   # Repository implementations
+├── core/               # Shared infrastructure
+│   ├── di/             # Dependency injection (Riverpod providers)
+│   ├── navigation/     # GoRouter configuration
+│   └── repositories/   # Abstract repository interfaces
+├── features/           # Feature modules
+│   ├── auth/           # Authentication feature
+│   ├── issues/         # Issues (posts) feature
+│   ├── voting/         # Voting feature
+│   ├── comments/       # Comments feature
+│   ├── profile/        # Profile feature
+│   ├── dashboard/      # Dashboard feature
+│   └── activity/       # Activity feed feature
+└── pages/              # Legacy pages (being migrated)
+```
+
+### State Management
+
+- **Riverpod**: Modern, compile-safe state management
+- **Notifiers**: Each feature has dedicated notifiers (e.g., `IssueListNotifier`, `AuthNotifier`)
+- **Optimistic Updates**: Voting uses optimistic UI updates for better UX
+
+### Navigation
+
+- **GoRouter**: Declarative routing with authentication guards
+- **ShellRoute**: Bottom navigation with persistent shell
+
+### Testing
+
+Run all tests:
+```bash
+flutter test
+```
+
+Run specific test:
+```bash
+flutter test test/widget/features/issues/issue_card_test.dart
+```
+
+
 ## Getting Started
 
 ### Prerequisites

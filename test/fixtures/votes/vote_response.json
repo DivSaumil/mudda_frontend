@@ -1,0 +1,7 @@
+{
+    "vote_id": 1,
+    "issue_id": 123,
+    "user_id": 42,
+    "vote_count": 43,
+    "has_user_voted": true
+}

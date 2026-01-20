@@ -1,0 +1,14 @@
+{
+  "id": 1,
+  "title": "Test Issue Title",
+  "content": "This is test content for the issue",
+  "description": "This is test content for the issue",
+  "media_urls": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
+  "vote_count": 42,
+  "comments": 5,
+  "status": "PENDING",
+  "created_at": "2024-01-15T10:30:00Z",
+  "has_user_voted": false,
+  "can_user_vote": true,
+  "username": "testuser123"
+}
