@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/auth_models.dart';
 import 'storage_service.dart';
+import '../config/constants.dart' as legacy_constants;
 
 class AuthService {
   final Dio _dio;
@@ -12,9 +13,16 @@ class AuthService {
 
   Future<LoginResponse> login(LoginRequest request) async {
     try {
-      final response = await _dio.post('/auth/login', data: request.toJson());
+      // Auth endpoints are NOT under `/api/v1` in the new API contract.
+      // Use an absolute URL so we don't depend on the Dio baseUrl (which is `/api/v1`).
+      final response = await _dio.post(
+        '${legacy_constants.AppConstants.baseUrl}/auth/login',
+        data: request.toJson(),
+      );
       final loginResponse = LoginResponse.fromJson(response.data);
-      await _storageService.saveToken(loginResponse.token);
+      if (loginResponse.token.isNotEmpty) {
+        await _storageService.saveToken(loginResponse.token);
+      }
       return loginResponse;
     } catch (e) {
       throw Exception('Login failed: $e');
@@ -23,9 +31,13 @@ class AuthService {
 
   Future<void> signup(SignupRequest request) async {
     try {
-      final response = await _dio.post('/auth/signup', data: request.toJson());
+      // New API uses `/auth/register` and returns MessageResponse.
+      final response = await _dio.post(
+        '${legacy_constants.AppConstants.baseUrl}/auth/register',
+        data: request.toJson(),
+      );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         // Handle success
       } else {
         throw Exception('Failed to create user');

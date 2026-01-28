@@ -47,7 +47,8 @@ class CommentService {
 
   Future<void> updateComment(int commentId, String content) async {
     try {
-      await _dio.put('/comments/$commentId', data: {'content': content});
+      // New API expects a raw JSON string body (see lib/api2/services/CommentControllerService.ts)
+      await _dio.put('/comments/$commentId', data: content);
     } catch (e) {
       throw Exception('Failed to update comment: $e');
     }
