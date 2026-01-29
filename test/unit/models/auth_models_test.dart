@@ -32,30 +32,67 @@ void main() {
   });
 
   group('LoginResponse', () {
-    test('fromJson parses token correctly', () {
-      final json = {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token'};
+    test('fromJson parses accessToken correctly', () {
+      final json = {
+        'accessToken': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token',
+        'refreshToken': 'refresh_token_value',
+        'tokenType': 'Bearer',
+        'accessExpiresInMs': 3600000,
+      };
 
       final response = LoginResponse.fromJson(json);
 
+      expect(
+        response.accessToken,
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token',
+      );
+      // Test backwards-compatible accessor
       expect(response.token, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token');
     });
 
-    test('fromJson handles complex token', () {
-      final complexToken =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
-          'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.'
-          'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-
-      final json = {'token': complexToken};
+    test('fromJson parses all token fields', () {
+      final json = {
+        'accessToken': 'access_token_123',
+        'refreshToken': 'refresh_token_456',
+        'tokenType': 'Bearer',
+        'accessExpiresInMs': 7200000,
+        'user': {'id': 1, 'name': 'Test User'},
+      };
 
       final response = LoginResponse.fromJson(json);
 
-      expect(response.token, complexToken);
+      expect(response.accessToken, 'access_token_123');
+      expect(response.refreshToken, 'refresh_token_456');
+      expect(response.tokenType, 'Bearer');
+      expect(response.accessExpiresInMs, 7200000);
+      expect(response.user, isNotNull);
+      expect(response.user?['id'], 1);
+    });
+
+    test('fromJson handles null optional fields', () {
+      final json = <String, dynamic>{'accessToken': 'token_only'};
+
+      final response = LoginResponse.fromJson(json);
+
+      expect(response.accessToken, 'token_only');
+      expect(response.refreshToken, isNull);
+      expect(response.tokenType, isNull);
+      expect(response.accessExpiresInMs, isNull);
+      expect(response.user, isNull);
+    });
+
+    test('token getter returns empty string when accessToken is null', () {
+      final json = <String, dynamic>{};
+
+      final response = LoginResponse.fromJson(json);
+
+      expect(response.accessToken, isNull);
+      expect(response.token, ''); // Backwards-compatible accessor
     });
   });
 
   group('SignupRequest', () {
-    test('toJson includes all required fields', () {
+    test('toJson includes all required fields with correct key names', () {
       final request = SignupRequest(
         userName: 'newuser',
         name: 'New User',
@@ -67,12 +104,14 @@ void main() {
 
       final json = request.toJson();
 
-      expect(json['userName'], 'newuser');
+      // Note: API expects 'username' not 'userName'
+      expect(json['username'], 'newuser');
       expect(json['name'], 'New User');
       expect(json['email'], 'newuser@example.com');
       expect(json['dateOfBirth'], '1990-05-15');
       expect(json['phoneNumber'], '+1234567890');
       expect(json['password'], 'securePassword123');
+      expect(json['role'], 'CITIZEN'); // Default role
     });
 
     test('toJson includes optional profileImageUrl when provided', () {

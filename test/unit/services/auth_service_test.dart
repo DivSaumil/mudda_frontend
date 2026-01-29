@@ -1,12 +1,17 @@
 // Unit tests for AuthService
 // Tests authentication operations: login, signup, logout
+//
+// These tests verify:
+// - Successful login saves token and returns LoginResponse
+// - Signup calls the correct endpoint
+// - Logout clears stored token
+// - Error handling for various failure scenarios
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mudda_frontend/api/services/auth_service.dart';
-import 'package:mudda_frontend/api/services/storage_service.dart';
 import 'package:mudda_frontend/api/models/auth_models.dart';
 
 import '../../mocks/mock_services.dart';
@@ -17,8 +22,15 @@ void main() {
   late MockStorageService mockStorage;
   late AuthService authService;
 
+  // The AuthService uses absolute URLs for auth endpoints (not under /api/v1)
+  // Base URL used in tests - must match AppConstants.baseUrl exactly
+  // Note: The URL in constants ends with a trailing slash
+  const testBaseUrl = 'http://mudda.us-east-1.elasticbeanstalk.com/';
+
   setUp(() {
-    dio = Dio(BaseOptions(baseUrl: 'http://test.api/api/v1'));
+    // Note: AuthService uses absolute URLs for auth endpoints, so baseUrl here
+    // is only used for non-auth endpoints like /users/profile
+    dio = Dio(BaseOptions(baseUrl: '$testBaseUrl/api/v1'));
     dioAdapter = DioAdapter(dio: dio);
     mockStorage = MockStorageService();
     authService = AuthService(dio: dio, storageService: mockStorage);
@@ -43,9 +55,15 @@ void main() {
     test('returns LoginResponse on successful login', () async {
       // Arrange
       const testToken = 'test_jwt_token_12345';
+      // AuthService calls absolute URL: ${baseUrl}/auth/login
       dioAdapter.onPost(
-        '/auth/login',
-        (server) => server.reply(200, {'token': testToken}),
+        '$testBaseUrl/auth/login',
+        (server) => server.reply(200, {
+          'accessToken': testToken,
+          'refreshToken': 'refresh_token',
+          'tokenType': 'Bearer',
+          'accessExpiresInMs': 3600000,
+        }),
         data: Matchers.any,
       );
       when(() => mockStorage.saveToken(any())).thenAnswer((_) async {});
@@ -56,7 +74,8 @@ void main() {
       );
 
       // Assert
-      expect(result.token, testToken);
+      expect(result.accessToken, testToken);
+      expect(result.token, testToken); // Backwards-compatible accessor
       verify(() => mockStorage.saveToken(testToken)).called(1);
     });
 
@@ -64,8 +83,13 @@ void main() {
       // Arrange
       const testToken = 'saved_token';
       dioAdapter.onPost(
-        '/auth/login',
-        (server) => server.reply(200, {'token': testToken}),
+        '$testBaseUrl/auth/login',
+        (server) => server.reply(200, {
+          'accessToken': testToken,
+          'refreshToken': 'refresh',
+          'tokenType': 'Bearer',
+          'accessExpiresInMs': 3600000,
+        }),
         data: Matchers.any,
       );
       when(() => mockStorage.saveToken(any())).thenAnswer((_) async {});
@@ -80,7 +104,7 @@ void main() {
     test('throws exception on 401 unauthorized', () async {
       // Arrange
       dioAdapter.onPost(
-        '/auth/login',
+        '$testBaseUrl/auth/login',
         (server) => server.throws(
           401,
           DioException(
@@ -108,7 +132,7 @@ void main() {
     test('throws exception on network error', () async {
       // Arrange
       dioAdapter.onPost(
-        '/auth/login',
+        '$testBaseUrl/auth/login',
         (server) => server.throws(
           500,
           DioException(
@@ -131,9 +155,9 @@ void main() {
 
   group('AuthService.signup', () {
     test('completes successfully on 201 status', () async {
-      // Arrange
+      // Arrange - New API uses /auth/register
       dioAdapter.onPost(
-        '/auth/signup',
+        '$testBaseUrl/auth/register',
         (server) => server.reply(201, {'message': 'User created'}),
         data: Matchers.any,
       );
@@ -154,11 +178,46 @@ void main() {
       );
     });
 
-    test('throws exception on non-201 status', () async {
+    test('completes successfully on 200 status', () async {
+      // Arrange - Some backends return 200 instead of 201
+      dioAdapter.onPost(
+        '$testBaseUrl/auth/register',
+        (server) => server.reply(200, {'message': 'User created successfully'}),
+        data: Matchers.any,
+      );
+
+      // Act & Assert
+      await expectLater(
+        authService.signup(
+          SignupRequest(
+            userName: 'user2',
+            name: 'User Two',
+            email: 'user2@example.com',
+            dateOfBirth: '1995-06-15',
+            phoneNumber: '+9876543210',
+            password: 'anotherPass456',
+          ),
+        ),
+        completes,
+      );
+    });
+
+    test('throws exception on conflict (email exists)', () async {
       // Arrange
       dioAdapter.onPost(
-        '/auth/signup',
-        (server) => server.reply(400, {'error': 'Email already exists'}),
+        '$testBaseUrl/auth/register',
+        (server) => server.throws(
+          409,
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            response: Response(
+              statusCode: 409,
+              data: {'error': 'Email already exists'},
+              requestOptions: RequestOptions(path: '/auth/register'),
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
         data: Matchers.any,
       );
 
