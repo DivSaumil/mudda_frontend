@@ -34,6 +34,9 @@ class AuthInterceptor extends Interceptor {
       (path) => options.path.contains(path),
     );
 
+    // Add client type header for breaking changes in latest stage
+    options.headers['X-Client-Type'] = 'mobile';
+
     if (!isPublicPath) {
       final token = await _storageService.getToken();
       if (token != null && token.isNotEmpty) {

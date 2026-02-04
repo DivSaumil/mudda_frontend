@@ -35,7 +35,8 @@ class AmazonImageService {
         );
       }
 
-      final response = await _dio.post('/amazon/images', data: formData);
+      // Use batch endpoint for multiple images
+      final response = await _dio.post('/amazon/images/batch', data: formData);
 
       final List<dynamic> jsonList = response.data;
       return jsonList
