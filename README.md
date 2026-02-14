@@ -12,9 +12,108 @@ Mudda Frontend is a Flutter application that serves as the user interface for th
 - Responsive UI for Android devices
 - Drawer menu for profile, settings, and support
 
-## Architecture
+## Architecture Overview
 
-This project uses a **feature-first modular architecture** with **Riverpod** for state management.
+This project follows a **Feature-First, Layered Architecture** powered by **Riverpod** for state management and **GoRouter** for navigation. The goal is to separate concerns, making the codebase scalable, testable, and easy to maintain.
+
+### High-Level Architecture
+
+The application is divided into four main layers:
+
+```mermaid
+graph TD
+    subgraph Presentation["Presentation Layer (UI)"]
+        style Presentation fill:#e1f5fe,stroke:#01579b
+        Widgets["Widgets & Screens"]
+    end
+
+    subgraph Application["Application Layer (State)"]
+        style Application fill:#fff3e0,stroke:#e65100
+        Notifiers["Riverpod Notifiers"]
+        States["State Classes"]
+    end
+
+    subgraph Domain["Domain Layer (Business Logic)"]
+        style Domain fill:#e8f5e9,stroke:#1b5e20
+        Models["Data Models"]
+        Repositories["Repository Interfaces"]
+    end
+
+    subgraph Data["Data Layer (Infrastructure)"]
+        style Data fill:#f3e5f5,stroke:#4a148c
+        Services["API Services"]
+        Storage["Local Storage"]
+        Network["Dio Client"]
+    end
+
+    Presentation -->|Watches| Application
+    Application -->|Manipulates| Domain
+    Application -->|Calls| Data
+    Data -->|Returns| Domain
+```
+
+### Data Flow & Interaction
+
+The following sequence diagram illustrates how data flows through the application when a user interacts with a feature (e.g., viewing the issue feed).
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as UI (Screen)
+    participant Router as GoRouter
+    participant Notifier as IssueListNotifier
+    participant Repo as IssueRepository
+    participant Service as IssueService
+    participant Network as Dio Client
+
+    Note over User, Network: Application Start
+    User->>UI: Opens App
+    UI->>Router: Checks Current Route
+    Router->>Notifier: Watch Auth State
+    Notifier-->>Router: Authenticated
+    Router-->>UI: Renders Home Screen
+
+    Note over User, Network: Feature Interaction (Load Issues)
+    UI->>Notifier: loadInitialIssues()
+    activate Notifier
+    Notifier->>Notifier: Set State = Loading
+    Notifier->>Repo: fetchIssues()
+    activate Repo
+    Repo->>Service: getAllIssues()
+    activate Service
+    Service->>Network: GET /api/v1/issues
+    activate Network
+    Network-->>Service: JSON Response
+    deactivate Network
+    Service-->>Repo: List<IssueResponse>
+    deactivate Service
+    Repo-->>Notifier: List<Issue>
+    deactivate Repo
+    Notifier->>Notifier: Set State = Loaded(issues)
+    deactivate Notifier
+    Notifier-->>UI: Updates UI with Data
+    UI-->>User: Displays Issue List
+```
+
+### Key Components
+
+-   **Presentation Layer (`lib/features/*/presentation`)**:
+    -   Contains generic Widgets and Screens.
+    -   **Passive View**: UI components listen to state changes from Riverpod providers and rebuild accordingly.
+
+-   **Application Layer (`lib/features/*/application`)**:
+    -   **Notifiers**: `StateNotifier` or `AsyncNotifier` subclasses (e.g., `AuthNotifier`, `IssueListNotifier`).
+    -   Manage the state of the application and handle user logic.
+    -   Interact with Repositories to fetch or update data.
+
+-   **Domain Layer (`lib/api/models`)**:
+    -   Defines the core business objects (e.g., `Issue`, `User`, `Comment`).
+    -   Pure Dart classes, often generated with `freezed` or `json_serializable`.
+
+-   **Data Layer (`lib/api/services`, `lib/api/repositories`)**:
+    -   **Services**: Handle direct API calls using `Dio`. They map JSON to Dart objects.
+    -   **Repositories**: Abstract the data source. They provide a clean API for the application layer, handling data transformations and error mapping.
+    -   **DioProvider**: A centralized HTTP client configured with interceptors (like `AuthInterceptor` for injecting tokens).
 
 ### Project Structure
 
