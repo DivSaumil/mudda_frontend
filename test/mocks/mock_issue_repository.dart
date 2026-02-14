@@ -1,8 +1,9 @@
 import 'package:mudda_frontend/api/models/issue_models.dart';
-import 'package:mudda_frontend/core/repositories/i_issue_repository.dart';
+import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
 
-/// Mock implementation of IIssueRepository for testing.
-class MockIssueRepository implements IIssueRepository {
+/// Mock implementation of IssueRepository for testing.
+class MockIssueRepository implements IssueRepository {
   final List<IssueResponse> _mockIssues = [];
   bool shouldThrow = false;
   String errorMessage = 'Mock error';
@@ -44,7 +45,12 @@ class MockIssueRepository implements IIssueRepository {
   }
 
   @override
-  Future<PageIssueSummaryResponse> getIssues({
+  IssueService get service => throw UnimplementedError();
+
+  @override
+  Future<List<IssueResponse>> fetchIssues({
+    IssueFilterRequest? filter,
+    String? category,
     int page = 0,
     int size = 20,
   }) async {
@@ -52,26 +58,40 @@ class MockIssueRepository implements IIssueRepository {
 
     await Future.delayed(const Duration(milliseconds: 100));
 
-    final start = page * size;
-    final end = (start + size).clamp(0, _mockIssues.length);
-    final pageIssues = start < _mockIssues.length
-        ? _mockIssues.sublist(start, end)
-        : <IssueResponse>[];
+    var filtered = _mockIssues.toList();
+    if (filter != null) {
+      // Simple mock filtering logic
+      if (filter.status != null) {
+        filtered = filtered.where((i) => i.status == filter.status).toList();
+      }
+      if (filter.category != null) {
+        // Mock doesn't strictly have category field in IssueResponse shown in view_file,
+        // but assuming it might or we just ignore for now if field missing.
+        // Actually IssueResponse in the view_file didn't show category field?
+        // checking view_file of mock again...
+        // IssueResponse in mock init: id, title, content, fullContent, status, voteCount, comments, hasUserVoted, canUserVote, username, createdAt, mediaUrls.
+        // No category. So ignoring category filter for now.
+      }
+    }
 
-    return PageIssueSummaryResponse(
-      issues: pageIssues,
-      totalPages: (_mockIssues.length / size).ceil(),
-      totalElements: _mockIssues.length,
-    );
+    if (category != null && category.isNotEmpty && category != 'All') {
+      // filter by category if possible
+    }
+
+    final start = page * size;
+    final end = (start + size).clamp(0, filtered.length);
+    if (start >= filtered.length) return [];
+
+    return filtered.sublist(start, end);
   }
 
   @override
-  Future<IssueResponse> getIssue(int issueId) async {
+  Future<IssueResponse> getIssue(int id) async {
     if (shouldThrow) throw Exception(errorMessage);
 
     await Future.delayed(const Duration(milliseconds: 50));
     return _mockIssues.firstWhere(
-      (i) => i.id == issueId,
+      (i) => i.id == id,
       orElse: () => throw Exception('Issue not found'),
     );
   }
@@ -86,7 +106,7 @@ class MockIssueRepository implements IIssueRepository {
       title: request.title,
       content: request.content,
       fullContent: request.content,
-      status: 'PENDING',
+      status: 'PENDING', // Default status
       voteCount: 0,
       comments: 0,
       hasUserVoted: false,
@@ -100,49 +120,26 @@ class MockIssueRepository implements IIssueRepository {
   }
 
   @override
-  Future<IssueResponse> updateIssue(
-    int issueId,
-    UpdateIssueRequest request,
-  ) async {
+  Future<IssueResponse> updateIssue(int id, UpdateIssueRequest request) async {
     if (shouldThrow) throw Exception(errorMessage);
 
-    final index = _mockIssues.indexWhere((i) => i.id == issueId);
+    final index = _mockIssues.indexWhere((i) => i.id == id);
     if (index == -1) throw Exception('Issue not found');
 
-    // Return the same issue (simplified mock)
+    // Return the same issue (simplified mock) - normally we'd update it
     return _mockIssues[index];
   }
 
   @override
-  Future<void> deleteIssue(int issueId) async {
+  Future<void> deleteIssue(int id) async {
     if (shouldThrow) throw Exception(errorMessage);
-    _mockIssues.removeWhere((i) => i.id == issueId);
+    _mockIssues.removeWhere((i) => i.id == id);
   }
 
   @override
-  Future<IssueClusterResponse> getClusters(int numberOfClusters) async {
+  Future<IssueClusterResponse> getClusters(int k) async {
     if (shouldThrow) throw Exception(errorMessage);
     return IssueClusterResponse(clusteredIssues: _mockIssues);
-  }
-
-  @override
-  Future<PageIssueSummaryResponse> filterIssues(
-    IssueFilterRequest filter, {
-    int page = 0,
-    int size = 20,
-  }) async {
-    if (shouldThrow) throw Exception(errorMessage);
-
-    var filtered = _mockIssues.toList();
-    if (filter.status != null) {
-      filtered = filtered.where((i) => i.status == filter.status).toList();
-    }
-
-    return PageIssueSummaryResponse(
-      issues: filtered,
-      totalPages: 1,
-      totalElements: filtered.length,
-    );
   }
 
   /// Adds a mock issue for testing.

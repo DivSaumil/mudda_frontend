@@ -1,0 +1,7 @@
+Analyzing mudda_frontend...                                     
+
+   info - Parameter 'key' could be a super parameter - lib\features\activity\presentation\screens\activity_screen.dart:19:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\features\activity\presentation\screens\activity_screen.dart:87:9 - use_super_parameters
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\issues\presentation\screens\create_issue_screen.dart:275:21 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\features\issues\presentation\screens\location_picker_screen.dart:7:9 - use_super_parameters
+

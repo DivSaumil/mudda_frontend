@@ -1,8 +1,6 @@
 // Unit tests for IssueResponse and related models
 // These tests lock in existing JSON parsing behavior before refactoring
 
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 

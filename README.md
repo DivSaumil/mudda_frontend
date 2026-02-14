@@ -27,7 +27,6 @@ lib/
 ├── core/               # Shared infrastructure
 │   ├── di/             # Dependency injection (Riverpod providers)
 │   ├── navigation/     # GoRouter configuration
-│   └── repositories/   # Abstract repository interfaces
 ├── features/           # Feature modules
 │   ├── auth/           # Authentication feature
 │   ├── issues/         # Issues (posts) feature

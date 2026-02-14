@@ -5,13 +5,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/models/location_models.dart';
-import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+
 import 'package:mudda_frontend/core/di/providers.dart';
 import 'package:mudda_frontend/features/issues/presentation/screens/location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';
 
 class CreateIssuePage extends ConsumerStatefulWidget {
-  const CreateIssuePage({Key? key}) : super(key: key);
+  const CreateIssuePage({super.key});
 
   @override
   ConsumerState<CreateIssuePage> createState() => _CreateIssuePageState();
@@ -30,7 +30,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
   double _severity = 1.0;
   bool _isUrgent = false;
   LatLng? _selectedLocation;
-  List<XFile> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
 
   final Map<String, int> _categoryMap = {
     'Sanitation': 1,
@@ -272,7 +272,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: _selectedCategory,
+                    initialValue: _selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category',
                       border: OutlineInputBorder(),

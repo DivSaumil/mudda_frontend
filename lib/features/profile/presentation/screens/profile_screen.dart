@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mudda_frontend/core/di/providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
@@ -92,7 +92,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                             height: 200,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                             ),
                           ),
                         ),
@@ -104,7 +104,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                             height: 150,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                             ),
                           ),
                         ),
@@ -121,14 +121,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                             ),
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                 ),
@@ -154,8 +154,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.2,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.2,
                                             ),
                                             blurRadius: 10,
                                             offset: const Offset(0, 5),
@@ -184,7 +184,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                       '@$username',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.white.withOpacity(0.8),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -194,7 +196,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         height: 1.4,
                                       ),
                                     ),
@@ -208,13 +212,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                         Container(
                                           height: 20,
                                           width: 1,
-                                          color: Colors.white.withOpacity(0.3),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.3,
+                                          ),
                                         ),
                                         _buildStatItem("Following", following),
                                         Container(
                                           height: 20,
                                           width: 1,
-                                          color: Colors.white.withOpacity(0.3),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.3,
+                                          ),
                                         ),
                                         _buildStatItem(
                                           "Location",
@@ -288,7 +296,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             letterSpacing: 0.5,
           ),
         ),
@@ -316,7 +324,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -362,7 +370,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(

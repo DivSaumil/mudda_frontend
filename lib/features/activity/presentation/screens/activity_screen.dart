@@ -7,7 +7,8 @@ class AccountActivity {
   final String timestamp;
   final IconData icon;
 
-  const AccountActivity({ // Added const keyword here
+  const AccountActivity({
+    // Added const keyword here
     required this.title,
     required this.description,
     required this.timestamp,
@@ -16,25 +17,28 @@ class AccountActivity {
 }
 
 class AccountActivityPage extends StatelessWidget {
-  const AccountActivityPage({Key? key}) : super(key: key);
+  const AccountActivityPage({super.key});
 
   final List<AccountActivity> dummyAccountActivities = const [
     // Using initializer list to ensure const constructor requirements are met
     AccountActivity(
       title: 'Account created',
-      description: 'Your account was successfully created. Welcome to the platform!',
+      description:
+          'Your account was successfully created. Welcome to the platform!',
       timestamp: '5d ago',
       icon: Icons.person_add,
     ),
     AccountActivity(
       title: 'Email updated',
-      description: 'Your primary email address has been successfully updated to example@example.com.',
+      description:
+          'Your primary email address has been successfully updated to example@example.com.',
       timestamp: '3d ago',
       icon: Icons.email,
     ),
     AccountActivity(
       title: 'Password changed',
-      description: 'Your password was successfully changed. If this was not you, please contact support.',
+      description:
+          'Your password was successfully changed. If this was not you, please contact support.',
       timestamp: '2d ago',
       icon: Icons.lock,
     ),
@@ -46,19 +50,22 @@ class AccountActivityPage extends StatelessWidget {
     ),
     AccountActivity(
       title: 'Two-factor authentication enabled',
-      description: 'Two-factor authentication has been enabled for your account, adding an extra layer of security.',
+      description:
+          'Two-factor authentication has been enabled for your account, adding an extra layer of security.',
       timestamp: '12h ago',
       icon: Icons.security,
     ),
     AccountActivity(
       title: 'Login from new device',
-      description: 'Someone logged into your account from a new device (Mobile Chrome on Android).',
+      description:
+          'Someone logged into your account from a new device (Mobile Chrome on Android).',
       timestamp: '2h ago',
       icon: Icons.devices_other,
     ),
     AccountActivity(
       title: 'Payment method added',
-      description: 'A new payment method (Visa ending in **** 1234) has been added to your account.',
+      description:
+          'A new payment method (Visa ending in **** 1234) has been added to your account.',
       timestamp: '1h ago',
       icon: Icons.payment,
     ),
@@ -67,9 +74,7 @@ class AccountActivityPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account Activity'),
-      ),
+      appBar: AppBar(title: const Text('Account Activity')),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: dummyAccountActivities.length,
@@ -84,10 +89,7 @@ class AccountActivityPage extends StatelessWidget {
 }
 
 class AccountActivityCard extends StatelessWidget {
-  const AccountActivityCard({
-    Key? key,
-    required this.activity,
-  }) : super(key: key);
+  const AccountActivityCard({super.key, required this.activity});
 
   final AccountActivity activity;
 
@@ -116,7 +118,8 @@ class AccountActivityCard extends StatelessWidget {
                     children: [
                       Text(
                         activity.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                       ),
