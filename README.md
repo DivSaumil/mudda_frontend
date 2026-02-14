@@ -35,8 +35,11 @@ lib/
 │   ├── comments/       # Comments feature
 │   ├── profile/        # Profile feature
 │   ├── dashboard/      # Dashboard feature
-│   └── activity/       # Activity feed feature
-└── pages/              # Legacy pages (being migrated)
+│   ├── activity/       # Activity feed feature
+│   └── about/          # About Us feature
+├── shared/             # Shared UI components and logic
+│   └── theme/          # App theme configuration
+└── main.dart           # Application entry point
 ```
 
 ### State Management
