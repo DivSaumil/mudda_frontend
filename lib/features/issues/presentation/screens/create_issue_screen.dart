@@ -1,25 +1,23 @@
 import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/models/location_models.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
-import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
-import 'package:mudda_frontend/api/services/issue_service.dart';
-import 'package:mudda_frontend/api/services/location_service.dart';
-import 'package:mudda_frontend/pages/LocationPickerPage.dart';
+import 'package:mudda_frontend/core/di/providers.dart';
+import 'package:mudda_frontend/features/issues/presentation/screens/location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';
 
-class CreateIssuePage extends StatefulWidget {
+class CreateIssuePage extends ConsumerStatefulWidget {
   const CreateIssuePage({Key? key}) : super(key: key);
 
   @override
-  State<CreateIssuePage> createState() => _CreateIssuePageState();
+  ConsumerState<CreateIssuePage> createState() => _CreateIssuePageState();
 }
 
-class _CreateIssuePageState extends State<CreateIssuePage> {
+class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -92,13 +90,13 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
       // 1. Upload Images
       List<String> uploadedImageUrls = [];
       if (_selectedImages.isNotEmpty) {
-        final amazonRepo = context.read<AmazonImageRepository>();
+        final amazonRepo = ref.read(amazonImageRepositoryProvider);
         final uploadedImages = await amazonRepo.uploadImages(_selectedImages);
         uploadedImageUrls = uploadedImages.map((img) => img.imageUrl).toList();
       }
 
       // 2. Create Location
-      final locationService = context.read<LocationService>();
+      final locationService = ref.read(locationServiceProvider);
 
       // Fetch address details from coordinates
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -135,8 +133,7 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
       );
 
       // 3. Create Issue
-      final issueService = context.read<IssueService>();
-      final issueRepository = IssueRepository(service: issueService);
+      final issueRepository = ref.read(issueRepositoryProvider);
 
       final request = CreateIssueRequest(
         title: _titleController.text.trim(),
@@ -154,7 +151,9 @@ class _CreateIssuePageState extends State<CreateIssuePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Issue created successfully! (ID: ${issueResponse.id})'),
+            content: Text(
+              '✅ Issue created successfully! (ID: ${issueResponse.id})',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );

@@ -8,10 +8,7 @@ part of 'providers.dart';
 
 String _$storageServiceHash() => r'62cbe9319bc400f2f78b16bce45d667585b592a2';
 
-/// Provider for the StorageService.
-///
-/// This is a simple provider that creates a single instance
-/// of StorageService to be shared across the app.
+/// Storage service for token management.
 ///
 /// Copied from [storageService].
 @ProviderFor(storageService)
@@ -30,11 +27,7 @@ final storageServiceProvider = Provider<StorageService>.internal(
 typedef StorageServiceRef = ProviderRef<StorageService>;
 String _$dioHash() => r'0b33c3b3a865b5e8fb59cee38d1cee4f5c8ab52d';
 
-/// Provider for the Dio HTTP client.
-///
-/// Creates a Dio instance configured with authentication
-/// interceptor and proper base URL/timeout settings.
-/// Depends on [storageServiceProvider] for token management.
+/// Dio HTTP client with auth interceptor.
 ///
 /// Copied from [dio].
 @ProviderFor(dio)
@@ -51,9 +44,30 @@ final dioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DioRef = ProviderRef<Dio>;
-String _$issueServiceHash() => r'c6283132ed295af4312f4e7263e0ecabcf12b6d6';
+String _$authServiceHash() => r'73a68148a37fcd9808e2ad87db268df38281eff5';
 
-/// See also [issueService].
+/// Auth service.
+///
+/// Copied from [authService].
+@ProviderFor(authService)
+final authServiceProvider = Provider<AuthService>.internal(
+  authService,
+  name: r'authServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$authServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AuthServiceRef = ProviderRef<AuthService>;
+String _$issueServiceHash() => r'ba9333dd23f851175a4754b5cc78f1d9b2bb57e1';
+
+/// Issue service + repository.
+///
+/// Copied from [issueService].
 @ProviderFor(issueService)
 final issueServiceProvider = Provider<IssueService>.internal(
   issueService,
@@ -85,9 +99,11 @@ final issueRepositoryProvider = Provider<IssueRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IssueRepositoryRef = ProviderRef<IssueRepository>;
-String _$voteServiceHash() => r'91ddfbd6afa42503dae08121df89b7429c003191';
+String _$voteServiceHash() => r'1a6100e7f9211426546ac6cd973799d13d3c8158';
 
-/// See also [voteService].
+/// Vote service + repository.
+///
+/// Copied from [voteService].
 @ProviderFor(voteService)
 final voteServiceProvider = Provider<VoteService>.internal(
   voteService,
@@ -119,9 +135,11 @@ final voteRepositoryProvider = Provider<VoteRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef VoteRepositoryRef = ProviderRef<VoteRepository>;
-String _$commentServiceHash() => r'8c25362e2636fd4cb473ab7b6a6b9bce9714f124';
+String _$commentServiceHash() => r'240b8800ed02c9d9075a9fac7550167e1d209d84';
 
-/// See also [commentService].
+/// Comment service + repository.
+///
+/// Copied from [commentService].
 @ProviderFor(commentService)
 final commentServiceProvider = Provider<CommentService>.internal(
   commentService,
@@ -153,5 +171,119 @@ final commentRepositoryProvider = Provider<CommentRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CommentRepositoryRef = ProviderRef<CommentRepository>;
+String _$userServiceHash() => r'c3b6aa0a5c8e6bf4087d14f3467008b3e6798711';
+
+/// User service.
+///
+/// Copied from [userService].
+@ProviderFor(userService)
+final userServiceProvider = Provider<UserService>.internal(
+  userService,
+  name: r'userServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$userServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UserServiceRef = ProviderRef<UserService>;
+String _$categoryServiceHash() => r'7a1445b0de9992d8dd386da456d2aed10fa8a135';
+
+/// Category service.
+///
+/// Copied from [categoryService].
+@ProviderFor(categoryService)
+final categoryServiceProvider = Provider<CategoryService>.internal(
+  categoryService,
+  name: r'categoryServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$categoryServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CategoryServiceRef = ProviderRef<CategoryService>;
+String _$locationServiceHash() => r'3cd98d56b2521a22febad422e5ec29e9987d2d0a';
+
+/// Location service.
+///
+/// Copied from [locationService].
+@ProviderFor(locationService)
+final locationServiceProvider = Provider<LocationService>.internal(
+  locationService,
+  name: r'locationServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$locationServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LocationServiceRef = ProviderRef<LocationService>;
+String _$roleServiceHash() => r'ab43429285b5b3e1d1fc97a88364bb02f234a2e1';
+
+/// Role service.
+///
+/// Copied from [roleService].
+@ProviderFor(roleService)
+final roleServiceProvider = Provider<RoleService>.internal(
+  roleService,
+  name: r'roleServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$roleServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RoleServiceRef = ProviderRef<RoleService>;
+String _$amazonImageServiceHash() =>
+    r'7a5cb8832eab97ccb349ab0a668488d4def46fd4';
+
+/// Amazon image service + repository.
+///
+/// Copied from [amazonImageService].
+@ProviderFor(amazonImageService)
+final amazonImageServiceProvider = Provider<AmazonImageService>.internal(
+  amazonImageService,
+  name: r'amazonImageServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$amazonImageServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AmazonImageServiceRef = ProviderRef<AmazonImageService>;
+String _$amazonImageRepositoryHash() =>
+    r'6bd752c88dc3e2926fe959358e357e10d2c01811';
+
+/// See also [amazonImageRepository].
+@ProviderFor(amazonImageRepository)
+final amazonImageRepositoryProvider = Provider<AmazonImageRepository>.internal(
+  amazonImageRepository,
+  name: r'amazonImageRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$amazonImageRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AmazonImageRepositoryRef = ProviderRef<AmazonImageRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -1,88 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
-import 'package:provider/provider.dart';
-import 'package:dio/dio.dart';
-
-// Legacy services (for backward compatibility during migration)
-import 'package:mudda_frontend/api/services/storage_service.dart';
-import 'package:mudda_frontend/api/services/auth_interceptor.dart';
-import 'package:mudda_frontend/api/services/auth_service.dart';
-import 'package:mudda_frontend/api/services/issue_service.dart';
-import 'package:mudda_frontend/api/services/vote_service.dart';
-import 'package:mudda_frontend/api/services/comment_service.dart';
-import 'package:mudda_frontend/api/services/user_service.dart';
-import 'package:mudda_frontend/api/services/category_service.dart';
-import 'package:mudda_frontend/api/services/location_service.dart';
-import 'package:mudda_frontend/api/services/role_service.dart';
-import 'package:mudda_frontend/api/services/amazon_service.dart';
-import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
-import 'package:mudda_frontend/api/config/constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // New router
 import 'package:mudda_frontend/core/navigation/app_router.dart';
 
 void main() {
-  runApp(
-    // Wrap with ProviderScope for Riverpod
-    ProviderScope(
-      child: MultiProvider(
-        providers: [
-          // Legacy providers for backward compatibility
-          Provider(create: (_) => StorageService()),
-          ProxyProvider<StorageService, AuthInterceptor>(
-            update: (_, storage, __) => AuthInterceptor(storage),
-          ),
-          ProxyProvider<AuthInterceptor, Dio>(
-            update: (_, interceptor, __) {
-              final dio = Dio(
-                BaseOptions(
-                  baseUrl: '${AppConstants.baseUrl}/api/v1',
-                  connectTimeout: const Duration(seconds: 30),
-                  receiveTimeout: const Duration(seconds: 30),
-                  contentType: Headers.jsonContentType,
-                  validateStatus: (status) => status! < 500,
-                ),
-              );
-              dio.interceptors.add(interceptor);
-              return dio;
-            },
-          ),
-          ProxyProvider2<Dio, StorageService, AuthService>(
-            update: (_, dio, storage, __) =>
-                AuthService(dio: dio, storageService: storage),
-          ),
-          ProxyProvider<Dio, IssueService>(
-            update: (_, dio, __) => IssueService(dio),
-          ),
-          ProxyProvider<Dio, VoteService>(
-            update: (_, dio, __) => VoteService(dio),
-          ),
-          ProxyProvider<Dio, CommentService>(
-            update: (_, dio, __) => CommentService(dio),
-          ),
-          ProxyProvider<Dio, UserService>(
-            update: (_, dio, __) => UserService(dio),
-          ),
-          ProxyProvider<Dio, CategoryService>(
-            update: (_, dio, __) => CategoryService(dio),
-          ),
-          ProxyProvider<Dio, LocationService>(
-            update: (_, dio, __) => LocationService(dio),
-          ),
-          ProxyProvider<Dio, RoleService>(
-            update: (_, dio, __) => RoleService(dio),
-          ),
-          ProxyProvider<Dio, AmazonImageService>(
-            update: (_, dio, __) => AmazonImageService(dio),
-          ),
-          ProxyProvider<AmazonImageService, AmazonImageRepository>(
-            update: (_, service, __) => AmazonImageRepository(service: service),
-          ),
-        ],
-        child: const MuddaApp(),
-      ),
-    ),
-  );
+  runApp(const ProviderScope(child: MuddaApp()));
 }
 
 /// Main app widget using GoRouter

@@ -178,9 +178,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               title: const Text('About'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('About coming soon!')),
-                );
+                context.push(AppRoutes.about);
               },
             ),
             const Spacer(),

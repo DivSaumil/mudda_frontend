@@ -1,41 +1,39 @@
 /// Core dependency injection providers.
 ///
 /// Defines Riverpod providers for core services that are used
-/// throughout the application. These are the foundational providers
-/// that other feature providers depend on.
+/// throughout the application.
 library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-// Using existing storage service for compatibility during migration
-import '../../api/services/issue_service.dart';
-import '../../api/repositories/issue_repository.dart';
-import '../../api/services/vote_service.dart';
-import '../../api/repositories/vote_repository.dart';
-import '../../api/services/comment_service.dart';
-import '../../api/repositories/comment_repository.dart';
-import '../../api/services/storage_service.dart';
-import '../../api/services/auth_interceptor.dart';
-import '../../api/config/constants.dart';
+import 'package:mudda_frontend/api/services/storage_service.dart';
+import 'package:mudda_frontend/api/services/auth_interceptor.dart';
+import 'package:mudda_frontend/api/services/auth_service.dart';
+import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/services/vote_service.dart';
+import 'package:mudda_frontend/api/services/comment_service.dart';
+import 'package:mudda_frontend/api/services/user_service.dart';
+import 'package:mudda_frontend/api/services/category_service.dart';
+import 'package:mudda_frontend/api/services/location_service.dart';
+import 'package:mudda_frontend/api/services/role_service.dart';
+import 'package:mudda_frontend/api/services/amazon_service.dart';
+import 'package:mudda_frontend/api/repositories/issue_repository.dart';
+import 'package:mudda_frontend/api/repositories/vote_repository.dart';
+import 'package:mudda_frontend/api/repositories/comment_repository.dart';
+import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
+import 'package:mudda_frontend/api/config/constants.dart';
 
 part 'providers.g.dart';
 
-/// Provider for the StorageService.
-///
-/// This is a simple provider that creates a single instance
-/// of StorageService to be shared across the app.
+/// Storage service for token management.
 @Riverpod(keepAlive: true)
 StorageService storageService(Ref ref) {
   return StorageService();
 }
 
-/// Provider for the Dio HTTP client.
-///
-/// Creates a Dio instance configured with authentication
-/// interceptor and proper base URL/timeout settings.
-/// Depends on [storageServiceProvider] for token management.
+/// Dio HTTP client with auth interceptor.
 @Riverpod(keepAlive: true)
 Dio dio(Ref ref) {
   final storage = ref.watch(storageServiceProvider);
@@ -56,10 +54,19 @@ Dio dio(Ref ref) {
   return dio;
 }
 
+/// Auth service.
+@Riverpod(keepAlive: true)
+AuthService authService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  final storage = ref.watch(storageServiceProvider);
+  return AuthService(dio: d, storageService: storage);
+}
+
+/// Issue service + repository.
 @Riverpod(keepAlive: true)
 IssueService issueService(Ref ref) {
-  final dio = ref.watch(dioProvider);
-  return IssueService(dio);
+  final d = ref.watch(dioProvider);
+  return IssueService(d);
 }
 
 @Riverpod(keepAlive: true)
@@ -68,10 +75,11 @@ IssueRepository issueRepository(Ref ref) {
   return IssueRepository(service: service);
 }
 
+/// Vote service + repository.
 @Riverpod(keepAlive: true)
 VoteService voteService(Ref ref) {
-  final dio = ref.watch(dioProvider);
-  return VoteService(dio);
+  final d = ref.watch(dioProvider);
+  return VoteService(d);
 }
 
 @Riverpod(keepAlive: true)
@@ -80,14 +88,56 @@ VoteRepository voteRepository(Ref ref) {
   return VoteRepository(service: service);
 }
 
+/// Comment service + repository.
 @Riverpod(keepAlive: true)
 CommentService commentService(Ref ref) {
-  final dio = ref.watch(dioProvider);
-  return CommentService(dio);
+  final d = ref.watch(dioProvider);
+  return CommentService(d);
 }
 
 @Riverpod(keepAlive: true)
 CommentRepository commentRepository(Ref ref) {
   final service = ref.watch(commentServiceProvider);
   return CommentRepository(service: service);
+}
+
+/// User service.
+@Riverpod(keepAlive: true)
+UserService userService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return UserService(d);
+}
+
+/// Category service.
+@Riverpod(keepAlive: true)
+CategoryService categoryService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return CategoryService(d);
+}
+
+/// Location service.
+@Riverpod(keepAlive: true)
+LocationService locationService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return LocationService(d);
+}
+
+/// Role service.
+@Riverpod(keepAlive: true)
+RoleService roleService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return RoleService(d);
+}
+
+/// Amazon image service + repository.
+@Riverpod(keepAlive: true)
+AmazonImageService amazonImageService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return AmazonImageService(d);
+}
+
+@Riverpod(keepAlive: true)
+AmazonImageRepository amazonImageRepository(Ref ref) {
+  final service = ref.watch(amazonImageServiceProvider);
+  return AmazonImageRepository(service: service);
 }

@@ -11,7 +11,6 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Add client type header for breaking changes in latest stage
     options.headers['X-Client-Type'] = 'mobile';
 
     final token = await _storageService.getToken();

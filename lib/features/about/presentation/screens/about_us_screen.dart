@@ -1,25 +1,5 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mudda App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const AboutUsPage(),
-    );
-  }
-}
-
 class AboutUsPage extends StatelessWidget {
   const AboutUsPage({super.key});
 
@@ -47,10 +27,7 @@ class AboutUsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              content,
-              style: const TextStyle(fontSize: 16, height: 1.5),
-            ),
+            Text(content, style: const TextStyle(fontSize: 16, height: 1.5)),
           ],
         ),
       ),
@@ -99,13 +76,13 @@ class AboutUsPage extends StatelessWidget {
                   Icons.flag,
                   'Our Mission',
                   'Mudda is a civic issue reporting and tracking platform designed to connect citizens and government authorities seamlessly. '
-                  'Our mission is to empower citizens to report issues in their communities, track their progress, and ensure timely resolutions.',
+                      'Our mission is to empower citizens to report issues in their communities, track their progress, and ensure timely resolutions.',
                 ),
                 sectionCard(
                   Icons.group,
                   'Our Team',
                   'We are a dedicated team of developers, designers, and civic enthusiasts committed to making city governance more accessible and responsive. '
-                  'With expertise in Flutter, Spring Boot, PostgreSQL, and Machine Learning, we aim to provide a seamless user experience for both citizens and authorities.',
+                      'With expertise in Flutter, Spring Boot, PostgreSQL, and Machine Learning, we aim to provide a seamless user experience for both citizens and authorities.',
                 ),
                 sectionCard(
                   Icons.contact_mail,

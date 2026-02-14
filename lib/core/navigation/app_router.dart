@@ -5,10 +5,11 @@ import 'package:mudda_frontend/features/auth/application/auth_notifier.dart';
 import 'package:mudda_frontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:mudda_frontend/features/auth/presentation/screens/signup_screen.dart';
 import 'package:mudda_frontend/features/issues/presentation/screens/issue_feed_screen.dart';
-import 'package:mudda_frontend/pages/createPost.dart';
-import 'package:mudda_frontend/pages/ActivityPage.dart';
-import 'package:mudda_frontend/pages/ProfilePage.dart';
-import 'package:mudda_frontend/pages/DashboardPage.dart';
+import 'package:mudda_frontend/features/issues/presentation/screens/create_issue_screen.dart';
+import 'package:mudda_frontend/features/activity/presentation/screens/activity_screen.dart';
+import 'package:mudda_frontend/features/profile/presentation/screens/profile_screen.dart';
+import 'package:mudda_frontend/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:mudda_frontend/features/about/presentation/screens/about_us_screen.dart';
 import 'package:mudda_frontend/core/navigation/bottom_nav_shell.dart';
 
 /// Route paths
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String issueDetail = '/issue/:id';
   static const String dashboard = '/dashboard';
+  static const String about = '/about';
 }
 
 /// GoRouter provider
@@ -105,6 +107,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.dashboard,
         name: 'dashboard',
         builder: (context, state) => const DashboardPage(),
+      ),
+
+      // About Us
+      GoRoute(
+        path: AppRoutes.about,
+        name: 'about',
+        builder: (context, state) => const AboutUsPage(),
       ),
     ],
   );

@@ -45,31 +45,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
-    await ref
-        .read(authNotifierProvider.notifier)
-        .signup(
-          userName: _usernameController.text.trim(),
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          dateOfBirth: _dob!.toIso8601String().split('T')[0],
-          phoneNumber: _phoneController.text.trim(),
-          password: _passwordController.text,
-        );
+    // Capture notifier before the async gap so we don't use ref after dispose.
+    final notifier = ref.read(authNotifierProvider.notifier);
+    await notifier.signup(
+      userName: _usernameController.text.trim(),
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      dateOfBirth: _dob!.toIso8601String().split('T')[0],
+      phoneNumber: _phoneController.text.trim(),
+      password: _passwordController.text,
+    );
 
-    // Check result
+    // Check result – guard `mounted` before using `ref` after the async gap
+    if (!mounted) return;
     final state = ref.read(authNotifierProvider);
-    if (mounted) {
-      if (state.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Signup failed: ${state.error}')),
-        );
-      } else if (!state.isLoading) {
-        // Signup successful, AuthGate will handle navigation
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Signup successful!')));
-        Navigator.pop(context);
-      }
+    if (state.hasError) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Signup failed: ${state.error}')));
+    } else if (!state.isLoading) {
+      // Signup successful, AuthGate will handle navigation
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Signup successful!')));
+      Navigator.pop(context);
     }
   }
 
