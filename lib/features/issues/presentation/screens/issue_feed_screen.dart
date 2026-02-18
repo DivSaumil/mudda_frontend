@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mudda_frontend/features/issues/application/issue_list_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/widgets/issue_card.dart';
 
@@ -168,17 +169,12 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                       }
 
                       final issue = issues[index];
-                      // TODO: Implement navigation to detail screen
                       return IssueCard(
                         issue: issue,
                         onTap: (selectedIssue) {
-                          // Placeholder for navigation
-                          // Will implement routing in next steps
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Detail view coming soon!'),
-                              duration: Duration(seconds: 1),
-                            ),
+                          context.push(
+                            '/issue/${selectedIssue.id}',
+                            extra: selectedIssue,
                           );
                         },
                       );

@@ -10,6 +10,8 @@ import 'package:mudda_frontend/features/activity/presentation/screens/activity_s
 import 'package:mudda_frontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mudda_frontend/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:mudda_frontend/features/about/presentation/screens/about_us_screen.dart';
+import 'package:mudda_frontend/features/issues/presentation/screens/issue_detail_screen.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/core/navigation/bottom_nav_shell.dart';
 
 /// Route paths
@@ -114,6 +116,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.about,
         name: 'about',
         builder: (context, state) => const AboutUsPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.issueDetail,
+        name: 'issueDetail',
+        pageBuilder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          final issue = state.extra as IssueResponse?;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: IssueDetailScreen(issueId: id, initialIssue: issue),
+            transitionDuration: const Duration(milliseconds: 400),
+            reverseTransitionDuration: const Duration(milliseconds: 350),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  final slideTween =
+                      Tween<Offset>(
+                        begin: const Offset(1.0, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
+                  return SlideTransition(position: slideTween, child: child);
+                },
+          );
+        },
       ),
     ],
   );
