@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mudda_frontend/core/di/providers.dart';
+import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -144,6 +145,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    Align(
+                                      alignment: Alignment.topRight,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          ref.watch(themeControllerProvider) ==
+                                                  ThemeMode.dark
+                                              ? Icons.dark_mode
+                                              : Icons.light_mode,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                themeControllerProvider
+                                                    .notifier,
+                                              )
+                                              .toggleTheme();
+                                        },
+                                      ),
+                                    ),
                                     // Avatar
                                     Container(
                                       decoration: BoxDecoration(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mudda_frontend/features/auth/application/auth_notifier.dart';
 import 'package:mudda_frontend/core/navigation/app_router.dart';
+import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 
 /// Shell widget that provides bottom navigation for main app screens.
 class BottomNavShell extends ConsumerStatefulWidget {
@@ -118,12 +119,15 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final isDark = ref.watch(themeControllerProvider) == ThemeMode.dark;
     return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: DrawerHeader(
+              margin: EdgeInsets.zero,
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.deepPurple, Colors.purpleAccent],
                   begin: Alignment.topLeft,
@@ -134,7 +138,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
                     child: Icon(
@@ -143,8 +147,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
                       color: Colors.deepPurple,
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Text(
+                  const SizedBox(height: 10),
+                  const Text(
                     'Mudda User',
                     style: TextStyle(
                       color: Colors.white,
@@ -155,48 +159,61 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-                context.push(AppRoutes.dashboard);
+          ),
+          ListTile(
+            leading: const Icon(Icons.dashboard),
+            title: const Text('Dashboard'),
+            onTap: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.dashboard);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings coming soon!')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About'),
+            onTap: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.about);
+            },
+          ),
+          ListTile(
+            leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+            title: const Text('Dark Mode'),
+            trailing: Switch(
+              value: isDark,
+              onChanged: (value) {
+                ref.read(themeControllerProvider.notifier).toggleTheme();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Settings coming soon!')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('About'),
-              onTap: () {
-                Navigator.pop(context);
-                context.push(AppRoutes.about);
-              },
-            ),
-            const Spacer(),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(authNotifierProvider.notifier).logout();
-                if (context.mounted) {
-                  context.go(AppRoutes.login);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+            onTap: () {
+              ref.read(themeControllerProvider.notifier).toggleTheme();
+            },
+          ),
+          const Spacer(),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              Navigator.pop(context);
+              await ref.read(authNotifierProvider.notifier).logout();
+              if (context.mounted) {
+                context.go(AppRoutes.login);
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

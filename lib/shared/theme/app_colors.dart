@@ -17,6 +17,9 @@ class AppColors {
 
   /// Main brand color - Deep Purple
   static const Color primary = Colors.deepPurple;
+  static const Color primaryDarkTheme = Color(
+    0xFFB388FF,
+  ); // Lighter purple for dark mode
 
   /// Primary color with various opacities
   static const Color primaryLight = Color(0xFFB388FF);
@@ -26,9 +29,11 @@ class AppColors {
 
   /// Main scaffold background
   static const Color scaffoldBackground = Color(0xFFF5F7FA);
+  static const Color scaffoldBackgroundDark = Color(0xFF121212);
 
   /// Card and surface background
   static const Color surface = Colors.white;
+  static const Color surfaceDark = Color(0xFF1E1E1E);
 
   /// Elevated surface (modals, bottom sheets)
   static const Color surfaceElevated = Colors.white;
@@ -37,9 +42,11 @@ class AppColors {
 
   /// Primary text color
   static const Color textPrimary = Color(0xFF212121);
+  static const Color textPrimaryDark = Color(0xFFEEEEEE);
 
   /// Secondary text color
   static const Color textSecondary = Color(0xFF757575);
+  static const Color textSecondaryDark = Color(0xFFB0B0B0);
 
   /// Hint and placeholder text
   static const Color textHint = Color(0xFFBDBDBD);
@@ -95,6 +102,7 @@ class AppColors {
 
   /// Border and divider color
   static const Color border = Color(0xFFE0E0E0);
+  static const Color borderDark = Color(0xFF333333);
 
   /// Disabled state color
   static const Color disabled = Color(0xFFBDBDBD);

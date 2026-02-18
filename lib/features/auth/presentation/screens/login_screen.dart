@@ -32,6 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    if (!mounted) return;
     if (!_formKey.currentState!.validate()) return;
 
     // Capture notifier before the async gap so we don't use ref after dispose.
@@ -74,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
@@ -89,13 +90,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock_outline,
                         size: 48,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -103,14 +106,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       '৳ MUDDA',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
-                            color: Colors.blue.shade900,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w900,
                           ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Sign in to continue',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -158,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   _obscurePassword
                                       ? Icons.visibility_off
                                       : Icons.visibility,
-                                  color: Colors.grey,
+                                  color: Theme.of(context).hintColor,
                                 ),
                                 onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword,
@@ -215,12 +221,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 32),
 
                 // Social Login Divider
-                const Row(
+                Row(
                   children: [
                     Expanded(child: Divider()),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('OR', style: TextStyle(color: Colors.grey)),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(color: Theme.of(context).hintColor),
+                      ),
                     ),
                     Expanded(child: Divider()),
                   ],

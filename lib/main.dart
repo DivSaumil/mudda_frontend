@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // New router
 import 'package:mudda_frontend/core/navigation/app_router.dart';
+import 'package:mudda_frontend/shared/theme/app_theme.dart';
+import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 
 void main() {
   runApp(const ProviderScope(child: MuddaApp()));
@@ -15,59 +17,14 @@ class MuddaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeControllerProvider);
 
     return MaterialApp.router(
       title: 'Mudda',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Colors.black87),
-          titleTextStyle: TextStyle(
-            color: Colors.black87,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          color: Colors.white,
-        ),
-        textTheme: const TextTheme(
-          titleLarge: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Colors.black87,
-            letterSpacing: -0.5,
-          ),
-          titleMedium: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 15,
-            color: Colors.black54,
-            height: 1.5,
-          ),
-          labelSmall: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey,
-          ),
-        ),
-        tabBarTheme: const TabBarThemeData(
-          labelColor: Colors.deepPurple,
-          unselectedLabelColor: Colors.grey,
-        ),
-      ),
+      themeMode: themeMode,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       routerConfig: router,
     );
   }

@@ -49,14 +49,14 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
     final issueState = ref.watch(issueListNotifierProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // Category Filter
           Container(
             height: 60,
             padding: const EdgeInsets.symmetric(vertical: 10),
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
@@ -79,15 +79,17 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                           .filterByCategory(category);
                     }
                   },
-                  selectedColor: Colors.deepPurple,
-                  backgroundColor: Colors.white,
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Theme.of(context).cardColor,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
                     fontWeight: FontWeight.w500,
                   ),
                   side: isSelected
                       ? BorderSide.none
-                      : BorderSide(color: Colors.grey.shade300),
+                      : BorderSide(color: Theme.of(context).dividerColor),
                 );
               },
             ),
@@ -98,11 +100,13 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
             child: RefreshIndicator(
               onRefresh: () =>
                   ref.read(issueListNotifierProvider.notifier).refresh(),
-              color: Colors.deepPurple,
+              color: Theme.of(context).colorScheme.primary,
               child: issueState.when(
                 initial: () => const SizedBox(),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.deepPurple),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 error: (message) => Center(
                   child: Column(
@@ -134,13 +138,13 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                           Icon(
                             Icons.inbox_rounded,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).disabledColor,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No issues found in "$currentCategory"',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                               fontSize: 16,
                             ),
                           ),

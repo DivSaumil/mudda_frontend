@@ -147,7 +147,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -167,13 +167,15 @@ class _IssueCardState extends ConsumerState<IssueCard>
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: Colors.deepPurple.shade100,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15),
                     child: Text(
                       widget.issue.username.isNotEmpty
                           ? widget.issue.username[0].toUpperCase()
                           : 'U',
                       style: TextStyle(
-                        color: Colors.deepPurple.shade700,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -193,7 +195,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
                         Text(
                           _formatTimeAgo(widget.issue.createdAt),
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: Theme.of(context).hintColor,
                             fontSize: 12,
                           ),
                         ),
@@ -293,8 +295,8 @@ class _IssueCardState extends ConsumerState<IssueCard>
                                 : Icons.pan_tool_outlined,
                             label: '$_localLikes',
                             color: _hasVoted
-                                ? Colors.deepPurple
-                                : Colors.grey.shade600,
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).hintColor,
                             onTap: _handleVote,
                           ),
                           const SizedBox(width: 24),
@@ -308,7 +310,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
                       IconButton(
                         icon: Icon(
                           Icons.share_rounded,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).hintColor,
                         ),
                         onPressed: () {},
                       ),
@@ -333,12 +335,12 @@ class _IssueCardState extends ConsumerState<IssueCard>
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 22, color: color ?? Colors.grey.shade600),
+          Icon(icon, size: 22, color: color ?? Theme.of(context).hintColor),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: color ?? Colors.grey.shade600,
+              color: color ?? Theme.of(context).hintColor,
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),
