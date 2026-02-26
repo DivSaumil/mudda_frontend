@@ -96,6 +96,38 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
             ),
           ),
 
+          // Offline Banner
+          issueState.maybeMap(
+            loaded: (loaded) {
+              if (!loaded.isOffline) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                color: Colors.amber.shade800,
+                child: const Row(
+                  children: [
+                    Icon(Icons.cloud_off, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "You're offline — showing cached issues",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+
           // Issue List
           Expanded(
             child: RefreshIndicator(
@@ -130,7 +162,7 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                     ],
                   ),
                 ),
-                loaded: (issues, hasMore, currentCategory) {
+                loaded: (issues, hasMore, currentCategory, isOffline) {
                   if (issues.isEmpty) {
                     return Center(
                       child: Column(

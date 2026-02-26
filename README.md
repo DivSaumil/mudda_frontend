@@ -8,6 +8,7 @@ Mudda Frontend is a Flutter application that serves as the user interface for th
 - Detailed post view with comments and actions
 - Category filtering
 - Pull-to-refresh support
+- **Offline Support**: Issues are cached locally so users can view them without an internet connection. An offline banner is shown when viewing cached data.
 - Bottom navigation bar for quick access to main sections
 - Responsive UI for Android devices
 - Drawer menu for profile, settings, and support
@@ -63,6 +64,7 @@ sequenceDiagram
     participant Router as GoRouter
     participant Notifier as IssueListNotifier
     participant Repo as IssueRepository
+    participant Cache as IssueCacheService
     participant Service as IssueService
     participant Network as Dio Client
 
@@ -73,7 +75,7 @@ sequenceDiagram
     Notifier-->>Router: Authenticated
     Router-->>UI: Renders Home Screen
 
-    Note over User, Network: Feature Interaction (Load Issues)
+    Note over User, Network: Feature Interaction (Load Issues — Online)
     UI->>Notifier: loadInitialIssues()
     activate Notifier
     Notifier->>Notifier: Set State = Loading
@@ -87,12 +89,29 @@ sequenceDiagram
     deactivate Network
     Service-->>Repo: List<IssueResponse>
     deactivate Service
-    Repo-->>Notifier: List<Issue>
+    Repo->>Cache: cacheIssues(issues)
+    Repo-->>Notifier: FetchIssuesResult(issues, isFromCache: false)
     deactivate Repo
     Notifier->>Notifier: Set State = Loaded(issues)
     deactivate Notifier
     Notifier-->>UI: Updates UI with Data
     UI-->>User: Displays Issue List
+
+    Note over User, Network: Offline Fallback
+    UI->>Notifier: loadInitialIssues()
+    activate Notifier
+    Notifier->>Repo: fetchIssues()
+    activate Repo
+    Repo->>Service: getAllIssues()
+    Service--xRepo: Network Error
+    Repo->>Cache: getCachedIssues()
+    Cache-->>Repo: Cached Issues
+    Repo-->>Notifier: FetchIssuesResult(issues, isFromCache: true)
+    deactivate Repo
+    Notifier->>Notifier: Set State = Loaded(issues, isOffline: true)
+    deactivate Notifier
+    Notifier-->>UI: Updates UI with Cached Data
+    UI-->>User: Displays Cached Issues + Offline Banner
 ```
 
 ### Key Components
@@ -112,7 +131,8 @@ sequenceDiagram
 
 -   **Data Layer (`lib/api/services`, `lib/api/repositories`)**:
     -   **Services**: Handle direct API calls using `Dio`. They map JSON to Dart objects.
-    -   **Repositories**: Abstract the data source. They provide a clean API for the application layer, handling data transformations and error mapping.
+    -   **IssueCacheService**: Caches issues locally via `SharedPreferences` for offline support.
+    -   **Repositories**: Abstract the data source. They provide a clean API for the application layer, handling data transformations, caching, and error mapping.
     -   **DioProvider**: A centralized HTTP client configured with interceptors (like `AuthInterceptor` for injecting tokens).
 
 ### Project Structure

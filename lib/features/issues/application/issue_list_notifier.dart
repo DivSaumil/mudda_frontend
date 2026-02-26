@@ -22,16 +22,17 @@ class IssueListNotifier extends _$IssueListNotifier {
       final repository = ref.read(issueRepositoryProvider);
       final validCategory = category == 'All' ? null : category;
 
-      final issues = await repository.fetchIssues(
+      final result = await repository.fetchIssues(
         category: validCategory,
         page: _page,
         size: _pageSize,
       );
 
       state = IssueState.loaded(
-        issues,
-        hasMore: issues.length >= _pageSize,
+        result.issues,
+        hasMore: result.issues.length >= _pageSize,
         category: category,
+        isOffline: result.isFromCache,
       );
     } catch (e) {
       state = IssueState.error(e.toString());
@@ -54,7 +55,7 @@ class IssueListNotifier extends _$IssueListNotifier {
     // Pattern match to extract data only if loaded
     await currentState.mapOrNull(
       loaded: (loaded) async {
-        if (!loaded.hasMore) return;
+        if (!loaded.hasMore || loaded.isOffline) return;
 
         try {
           final repository = ref.read(issueRepositoryProvider);
@@ -64,23 +65,23 @@ class IssueListNotifier extends _$IssueListNotifier {
               ? null
               : loaded.category;
 
-          final newIssues = await repository.fetchIssues(
+          final result = await repository.fetchIssues(
             category: validCategory,
             page: nextpage,
             size: _pageSize,
           );
 
-          if (newIssues.isEmpty) {
+          if (result.issues.isEmpty) {
             state = loaded.copyWith(hasMore: false);
           } else {
             _page = nextpage;
             state = loaded.copyWith(
-              issues: [...loaded.issues, ...newIssues],
-              hasMore: newIssues.length >= _pageSize,
+              issues: [...loaded.issues, ...result.issues],
+              hasMore: result.issues.length >= _pageSize,
             );
           }
         } catch (e) {
-          // Error handling
+          // Error handling — don't break existing loaded state
         }
       },
     );

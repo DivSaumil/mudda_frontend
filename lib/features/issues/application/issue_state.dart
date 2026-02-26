@@ -11,6 +11,7 @@ class IssueState with _$IssueState {
     List<IssueResponse> issues, {
     @Default(true) bool hasMore,
     @Default('All') String category,
+    @Default(false) bool isOffline,
   }) = _Loaded;
   const factory IssueState.error(String message) = _Error;
 }

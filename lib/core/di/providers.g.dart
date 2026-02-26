@@ -82,7 +82,26 @@ final issueServiceProvider = Provider<IssueService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IssueServiceRef = ProviderRef<IssueService>;
-String _$issueRepositoryHash() => r'a234d3a0225f139ea6db3c14b4558153a0f7fa52';
+String _$issueCacheServiceHash() => r'25feb73b08644351eabb4a7aac64176adf5f12c9';
+
+/// Issue cache service for offline support.
+///
+/// Copied from [issueCacheService].
+@ProviderFor(issueCacheService)
+final issueCacheServiceProvider = Provider<IssueCacheService>.internal(
+  issueCacheService,
+  name: r'issueCacheServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$issueCacheServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef IssueCacheServiceRef = ProviderRef<IssueCacheService>;
+String _$issueRepositoryHash() => r'e9b52c54ac40baaa1d7b2914dc58c9febd6ef6e0';
 
 /// See also [issueRepository].
 @ProviderFor(issueRepository)

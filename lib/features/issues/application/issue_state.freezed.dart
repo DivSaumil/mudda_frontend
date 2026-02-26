@@ -25,6 +25,7 @@ mixin _$IssueState {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )
     loaded,
     required TResult Function(String message) error,
@@ -37,6 +38,7 @@ mixin _$IssueState {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )?
     loaded,
     TResult? Function(String message)? error,
@@ -45,7 +47,12 @@ mixin _$IssueState {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
     TResult Function()? loading,
-    TResult Function(List<IssueResponse> issues, bool hasMore, String category)?
+    TResult Function(
+      List<IssueResponse> issues,
+      bool hasMore,
+      String category,
+      bool isOffline,
+    )?
     loaded,
     TResult Function(String message)? error,
     required TResult orElse(),
@@ -145,6 +152,7 @@ class _$InitialImpl implements _Initial {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )
     loaded,
     required TResult Function(String message) error,
@@ -161,6 +169,7 @@ class _$InitialImpl implements _Initial {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )?
     loaded,
     TResult? Function(String message)? error,
@@ -173,7 +182,12 @@ class _$InitialImpl implements _Initial {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
     TResult Function()? loading,
-    TResult Function(List<IssueResponse> issues, bool hasMore, String category)?
+    TResult Function(
+      List<IssueResponse> issues,
+      bool hasMore,
+      String category,
+      bool isOffline,
+    )?
     loaded,
     TResult Function(String message)? error,
     required TResult orElse(),
@@ -275,6 +289,7 @@ class _$LoadingImpl implements _Loading {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )
     loaded,
     required TResult Function(String message) error,
@@ -291,6 +306,7 @@ class _$LoadingImpl implements _Loading {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )?
     loaded,
     TResult? Function(String message)? error,
@@ -303,7 +319,12 @@ class _$LoadingImpl implements _Loading {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
     TResult Function()? loading,
-    TResult Function(List<IssueResponse> issues, bool hasMore, String category)?
+    TResult Function(
+      List<IssueResponse> issues,
+      bool hasMore,
+      String category,
+      bool isOffline,
+    )?
     loaded,
     TResult Function(String message)? error,
     required TResult orElse(),
@@ -363,7 +384,12 @@ abstract class _$$LoadedImplCopyWith<$Res> {
     $Res Function(_$LoadedImpl) then,
   ) = __$$LoadedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({List<IssueResponse> issues, bool hasMore, String category});
+  $Res call({
+    List<IssueResponse> issues,
+    bool hasMore,
+    String category,
+    bool isOffline,
+  });
 }
 
 /// @nodoc
@@ -383,6 +409,7 @@ class __$$LoadedImplCopyWithImpl<$Res>
     Object? issues = null,
     Object? hasMore = null,
     Object? category = null,
+    Object? isOffline = null,
   }) {
     return _then(
       _$LoadedImpl(
@@ -398,6 +425,10 @@ class __$$LoadedImplCopyWithImpl<$Res>
             ? _value.category
             : category // ignore: cast_nullable_to_non_nullable
                   as String,
+        isOffline: null == isOffline
+            ? _value.isOffline
+            : isOffline // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -410,6 +441,7 @@ class _$LoadedImpl implements _Loaded {
     final List<IssueResponse> issues, {
     this.hasMore = true,
     this.category = 'All',
+    this.isOffline = false,
   }) : _issues = issues;
 
   final List<IssueResponse> _issues;
@@ -426,10 +458,13 @@ class _$LoadedImpl implements _Loaded {
   @override
   @JsonKey()
   final String category;
+  @override
+  @JsonKey()
+  final bool isOffline;
 
   @override
   String toString() {
-    return 'IssueState.loaded(issues: $issues, hasMore: $hasMore, category: $category)';
+    return 'IssueState.loaded(issues: $issues, hasMore: $hasMore, category: $category, isOffline: $isOffline)';
   }
 
   @override
@@ -440,7 +475,9 @@ class _$LoadedImpl implements _Loaded {
             const DeepCollectionEquality().equals(other._issues, _issues) &&
             (identical(other.hasMore, hasMore) || other.hasMore == hasMore) &&
             (identical(other.category, category) ||
-                other.category == category));
+                other.category == category) &&
+            (identical(other.isOffline, isOffline) ||
+                other.isOffline == isOffline));
   }
 
   @override
@@ -449,6 +486,7 @@ class _$LoadedImpl implements _Loaded {
     const DeepCollectionEquality().hash(_issues),
     hasMore,
     category,
+    isOffline,
   );
 
   /// Create a copy of IssueState
@@ -468,11 +506,12 @@ class _$LoadedImpl implements _Loaded {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )
     loaded,
     required TResult Function(String message) error,
   }) {
-    return loaded(issues, hasMore, category);
+    return loaded(issues, hasMore, category, isOffline);
   }
 
   @override
@@ -484,11 +523,12 @@ class _$LoadedImpl implements _Loaded {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )?
     loaded,
     TResult? Function(String message)? error,
   }) {
-    return loaded?.call(issues, hasMore, category);
+    return loaded?.call(issues, hasMore, category, isOffline);
   }
 
   @override
@@ -496,13 +536,18 @@ class _$LoadedImpl implements _Loaded {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
     TResult Function()? loading,
-    TResult Function(List<IssueResponse> issues, bool hasMore, String category)?
+    TResult Function(
+      List<IssueResponse> issues,
+      bool hasMore,
+      String category,
+      bool isOffline,
+    )?
     loaded,
     TResult Function(String message)? error,
     required TResult orElse(),
   }) {
     if (loaded != null) {
-      return loaded(issues, hasMore, category);
+      return loaded(issues, hasMore, category, isOffline);
     }
     return orElse();
   }
@@ -550,11 +595,13 @@ abstract class _Loaded implements IssueState {
     final List<IssueResponse> issues, {
     final bool hasMore,
     final String category,
+    final bool isOffline,
   }) = _$LoadedImpl;
 
   List<IssueResponse> get issues;
   bool get hasMore;
   String get category;
+  bool get isOffline;
 
   /// Create a copy of IssueState
   /// with the given fields replaced by the non-null parameter values.
@@ -639,6 +686,7 @@ class _$ErrorImpl implements _Error {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )
     loaded,
     required TResult Function(String message) error,
@@ -655,6 +703,7 @@ class _$ErrorImpl implements _Error {
       List<IssueResponse> issues,
       bool hasMore,
       String category,
+      bool isOffline,
     )?
     loaded,
     TResult? Function(String message)? error,
@@ -667,7 +716,12 @@ class _$ErrorImpl implements _Error {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
     TResult Function()? loading,
-    TResult Function(List<IssueResponse> issues, bool hasMore, String category)?
+    TResult Function(
+      List<IssueResponse> issues,
+      bool hasMore,
+      String category,
+      bool isOffline,
+    )?
     loaded,
     TResult Function(String message)? error,
     required TResult orElse(),

@@ -1,6 +1,7 @@
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
 import 'package:mudda_frontend/api/services/issue_service.dart';
+import 'package:mudda_frontend/api/services/issue_cache_service.dart';
 
 /// Mock implementation of IssueRepository for testing.
 class MockIssueRepository implements IssueRepository {
@@ -48,7 +49,10 @@ class MockIssueRepository implements IssueRepository {
   IssueService get service => throw UnimplementedError();
 
   @override
-  Future<List<IssueResponse>> fetchIssues({
+  IssueCacheService get cacheService => throw UnimplementedError();
+
+  @override
+  Future<FetchIssuesResult> fetchIssues({
     IssueFilterRequest? filter,
     String? category,
     int page = 0,
@@ -60,17 +64,8 @@ class MockIssueRepository implements IssueRepository {
 
     var filtered = _mockIssues.toList();
     if (filter != null) {
-      // Simple mock filtering logic
       if (filter.status != null) {
         filtered = filtered.where((i) => i.status == filter.status).toList();
-      }
-      if (filter.category != null) {
-        // Mock doesn't strictly have category field in IssueResponse shown in view_file,
-        // but assuming it might or we just ignore for now if field missing.
-        // Actually IssueResponse in the view_file didn't show category field?
-        // checking view_file of mock again...
-        // IssueResponse in mock init: id, title, content, fullContent, status, voteCount, comments, hasUserVoted, canUserVote, username, createdAt, mediaUrls.
-        // No category. So ignoring category filter for now.
       }
     }
 
@@ -80,9 +75,9 @@ class MockIssueRepository implements IssueRepository {
 
     final start = page * size;
     final end = (start + size).clamp(0, filtered.length);
-    if (start >= filtered.length) return [];
+    if (start >= filtered.length) return FetchIssuesResult(issues: []);
 
-    return filtered.sublist(start, end);
+    return FetchIssuesResult(issues: filtered.sublist(start, end));
   }
 
   @override

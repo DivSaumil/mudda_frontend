@@ -19,6 +19,7 @@ import 'package:mudda_frontend/api/services/category_service.dart';
 import 'package:mudda_frontend/api/services/location_service.dart';
 import 'package:mudda_frontend/api/services/role_service.dart';
 import 'package:mudda_frontend/api/services/amazon_service.dart';
+import 'package:mudda_frontend/api/services/issue_cache_service.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
 import 'package:mudda_frontend/api/repositories/vote_repository.dart';
 import 'package:mudda_frontend/api/repositories/comment_repository.dart';
@@ -69,10 +70,17 @@ IssueService issueService(Ref ref) {
   return IssueService(d);
 }
 
+/// Issue cache service for offline support.
+@Riverpod(keepAlive: true)
+IssueCacheService issueCacheService(Ref ref) {
+  return IssueCacheService();
+}
+
 @Riverpod(keepAlive: true)
 IssueRepository issueRepository(Ref ref) {
   final service = ref.watch(issueServiceProvider);
-  return IssueRepository(service: service);
+  final cacheService = ref.watch(issueCacheServiceProvider);
+  return IssueRepository(service: service, cacheService: cacheService);
 }
 
 /// Vote service + repository.
