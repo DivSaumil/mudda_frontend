@@ -77,7 +77,17 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
 
   Future<void> _submitIssue() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedCategory == null) {
+      setState(() => _currentStep = 0);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a category')));
+      return;
+    }
+
     if (_selectedLocation == null) {
+      setState(() => _currentStep = 2);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please select a location')));
@@ -192,7 +202,16 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
           type: StepperType.horizontal,
           currentStep: _currentStep,
           onStepContinue: () {
-            if (_currentStep < 2) {
+            if (_currentStep == 0) {
+              if (!_formKey.currentState!.validate()) return;
+              if (_selectedCategory == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please select a category')),
+                );
+                return;
+              }
+              setState(() => _currentStep += 1);
+            } else if (_currentStep == 1) {
               setState(() => _currentStep += 1);
             } else {
               _submitIssue();
