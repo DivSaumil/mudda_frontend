@@ -28,36 +28,52 @@ class AppRoutes {
   static const String about = '/about';
 }
 
+/// Notifier to listen to auth state changes and trigger router refresh without rebuilding the GoRouter instance
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen(authNotifierProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+
+  String? redirect(BuildContext context, GoRouterState state) {
+    final authState = _ref.read(authNotifierProvider);
+
+    final isLoggedIn = authState.maybeWhen(
+      data: (auth) =>
+          auth.maybeMap(authenticated: (_) => true, orElse: () => false),
+      orElse: () => false,
+    );
+
+    final isAuthRoute =
+        state.matchedLocation == AppRoutes.login ||
+        state.matchedLocation == AppRoutes.signup;
+
+    // Not logged in and not on auth route -> redirect to login
+    if (!isLoggedIn && !isAuthRoute) {
+      return AppRoutes.login;
+    }
+
+    // Logged in and on auth route -> redirect to home
+    if (isLoggedIn && isAuthRoute) {
+      return AppRoutes.home;
+    }
+
+    return null; // No redirect
+  }
+}
+
 /// GoRouter provider
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authNotifierProvider);
+  final notifier = RouterNotifier(ref);
 
   return GoRouter(
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
-    redirect: (context, state) {
-      final isLoggedIn = authState.maybeWhen(
-        data: (auth) =>
-            auth.maybeMap(authenticated: (_) => true, orElse: () => false),
-        orElse: () => false,
-      );
-
-      final isAuthRoute =
-          state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.signup;
-
-      // Not logged in and not on auth route -> redirect to login
-      if (!isLoggedIn && !isAuthRoute) {
-        return AppRoutes.login;
-      }
-
-      // Logged in and on auth route -> redirect to home
-      if (isLoggedIn && isAuthRoute) {
-        return AppRoutes.home;
-      }
-
-      return null; // No redirect
-    },
+    refreshListenable: notifier,
+    redirect: notifier.redirect,
     routes: [
       // Auth routes (no shell)
       GoRoute(

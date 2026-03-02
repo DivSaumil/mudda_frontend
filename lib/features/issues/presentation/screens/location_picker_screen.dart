@@ -18,6 +18,8 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   ); // Default to New Delhi
   bool _isLoading = true;
 
+  bool _isMapReady = false;
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +75,18 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         _selectedLocation = LatLng(position.latitude, position.longitude);
         _isLoading = false;
       });
+      if (_isMapReady) {
+        _mapController.move(_selectedLocation, 15);
+      }
+    }
+  }
+
+  void _onMapReady() {
+    setState(() {
+      _isMapReady = true;
+    });
+    // If location was fetched before map was ready, move it now
+    if (!_isLoading) {
       _mapController.move(_selectedLocation, 15);
     }
   }
@@ -105,6 +119,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 initialCenter: _selectedLocation,
                 initialZoom: 15.0,
                 onTap: _onTap,
+                onMapReady: _onMapReady,
               ),
               children: [
                 TileLayer(
