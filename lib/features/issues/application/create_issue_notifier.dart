@@ -7,24 +7,20 @@ part 'create_issue_notifier.g.dart';
 /// State for issue creation form
 class CreateIssueState {
   final String title;
-  final String content;
+  final String description;
   final int? categoryId;
   final int? locationId;
-  final int severityScore;
-  final bool urgencyFlag;
-  final List<String> imageUrls;
+  final List<String> imageKeys;
   final bool isSubmitting;
   final String? error;
   final IssueResponse? createdIssue;
 
   const CreateIssueState({
     this.title = '',
-    this.content = '',
+    this.description = '',
     this.categoryId,
     this.locationId,
-    this.severityScore = 1,
-    this.urgencyFlag = false,
-    this.imageUrls = const [],
+    this.imageKeys = const [],
     this.isSubmitting = false,
     this.error,
     this.createdIssue,
@@ -32,31 +28,27 @@ class CreateIssueState {
 
   CreateIssueState copyWith({
     String? title,
-    String? content,
+    String? description,
     int? categoryId,
     int? locationId,
-    int? severityScore,
-    bool? urgencyFlag,
-    List<String>? imageUrls,
+    List<String>? imageKeys,
     bool? isSubmitting,
     String? error,
     IssueResponse? createdIssue,
   }) {
     return CreateIssueState(
       title: title ?? this.title,
-      content: content ?? this.content,
+      description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
       locationId: locationId ?? this.locationId,
-      severityScore: severityScore ?? this.severityScore,
-      urgencyFlag: urgencyFlag ?? this.urgencyFlag,
-      imageUrls: imageUrls ?? this.imageUrls,
+      imageKeys: imageKeys ?? this.imageKeys,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: error,
       createdIssue: createdIssue,
     );
   }
 
-  bool get isValid => title.trim().isNotEmpty && content.trim().isNotEmpty;
+  bool get isValid => title.trim().isNotEmpty && description.trim().isNotEmpty;
 }
 
 /// Notifier for managing issue creation state.
@@ -71,8 +63,8 @@ class CreateIssueNotifier extends _$CreateIssueNotifier {
     state = state.copyWith(title: title);
   }
 
-  void updateContent(String content) {
-    state = state.copyWith(content: content);
+  void updateContent(String description) {
+    state = state.copyWith(description: description);
   }
 
   void updateCategory(int? categoryId) {
@@ -84,25 +76,27 @@ class CreateIssueNotifier extends _$CreateIssueNotifier {
   }
 
   void updateSeverity(int score) {
-    state = state.copyWith(severityScore: score);
+    // Severity is no longer sent in create request (v1.1)
+    // Keeping method signature for UI compatibility
   }
 
   void updateUrgency(bool urgent) {
-    state = state.copyWith(urgencyFlag: urgent);
+    // Urgency is no longer sent in create request (v1.1)
+    // Keeping method signature for UI compatibility
   }
 
-  void addImageUrl(String url) {
-    state = state.copyWith(imageUrls: [...state.imageUrls, url]);
+  void addImageKey(String key) {
+    state = state.copyWith(imageKeys: [...state.imageKeys, key]);
   }
 
-  void removeImageUrl(String url) {
+  void removeImageKey(String key) {
     state = state.copyWith(
-      imageUrls: state.imageUrls.where((u) => u != url).toList(),
+      imageKeys: state.imageKeys.where((k) => k != key).toList(),
     );
   }
 
   void clearImages() {
-    state = state.copyWith(imageUrls: []);
+    state = state.copyWith(imageKeys: []);
   }
 
   /// Submits the issue to the backend.
@@ -118,12 +112,10 @@ class CreateIssueNotifier extends _$CreateIssueNotifier {
       final repository = ref.read(issueRepositoryProvider);
       final request = CreateIssueRequest(
         title: state.title.trim(),
-        content: state.content.trim(),
+        description: state.description.trim(),
         categoryId: state.categoryId,
         locationId: state.locationId,
-        severityScore: state.severityScore,
-        urgencyFlag: state.urgencyFlag,
-        mediaUrls: state.imageUrls,
+        mediaUrls: state.imageKeys,
       );
 
       final issue = await repository.createIssue(request);

@@ -23,7 +23,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
   void initState() {
     super.initState();
     _localLikes = widget.issue.voteCount;
-    _hasVoted = widget.issue.hasUserVoted;
+    _hasVoted = widget.issue.hasUserVoted ?? false;
   }
 
   // Update local state if the widget updates with new data
@@ -32,7 +32,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.issue.id != widget.issue.id) {
       _localLikes = widget.issue.voteCount;
-      _hasVoted = widget.issue.hasUserVoted;
+      _hasVoted = widget.issue.hasUserVoted ?? false;
     }
   }
 
@@ -128,7 +128,8 @@ class _IssueCardState extends ConsumerState<IssueCard>
     switch (status.toUpperCase()) {
       case 'OPEN':
         return Colors.orange;
-      case 'SOLVED':
+      case 'RESOLVED':
+        return Colors.teal;
       case 'CLOSED':
         return Colors.green;
       case 'PENDING':
@@ -170,15 +171,20 @@ class _IssueCardState extends ConsumerState<IssueCard>
                     backgroundColor: Theme.of(
                       context,
                     ).colorScheme.primary.withValues(alpha: 0.15),
-                    child: Text(
-                      widget.issue.username.isNotEmpty
-                          ? widget.issue.username[0].toUpperCase()
-                          : 'U',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    backgroundImage: widget.issue.authorImageUrl.isNotEmpty
+                        ? NetworkImage(widget.issue.authorImageUrl)
+                        : null,
+                    child: widget.issue.authorImageUrl.isEmpty
+                        ? Text(
+                            widget.issue.authorName.isNotEmpty
+                                ? widget.issue.authorName[0].toUpperCase()
+                                : 'U',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -186,7 +192,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.issue.username,
+                          widget.issue.authorName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,

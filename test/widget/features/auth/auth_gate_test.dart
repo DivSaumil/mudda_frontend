@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,7 +54,8 @@ class _MockLoadingAuthNotifier extends AuthNotifier {
   @override
   Future<AuthState> build() async {
     // Return loading by not completing immediately
-    return const AuthState.unauthenticated();
+    final completer = Completer<AuthState>();
+    return completer.future;
   }
 }
 

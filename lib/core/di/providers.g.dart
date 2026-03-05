@@ -304,5 +304,41 @@ final amazonImageRepositoryProvider = Provider<AmazonImageRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AmazonImageRepositoryRef = ProviderRef<AmazonImageRepository>;
+String _$accountServiceHash() => r'f316663d3b036a887e004eca3505fa8fbba492b6';
+
+/// Account service + repository.
+///
+/// Copied from [accountService].
+@ProviderFor(accountService)
+final accountServiceProvider = Provider<AccountService>.internal(
+  accountService,
+  name: r'accountServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$accountServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AccountServiceRef = ProviderRef<AccountService>;
+String _$accountRepositoryHash() => r'6765a0b05f6d55d13eb34038e0070442c29e7f1b';
+
+/// See also [accountRepository].
+@ProviderFor(accountRepository)
+final accountRepositoryProvider = Provider<AccountRepository>.internal(
+  accountRepository,
+  name: r'accountRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$accountRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AccountRepositoryRef = ProviderRef<AccountRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

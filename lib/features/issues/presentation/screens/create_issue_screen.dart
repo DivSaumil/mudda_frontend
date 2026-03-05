@@ -98,11 +98,14 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
 
     try {
       // 1. Upload Images
-      List<String> uploadedImageUrls = [];
+      List<String> uploadedFileKeys = [];
       if (_selectedImages.isNotEmpty) {
         final amazonRepo = ref.read(amazonImageRepositoryProvider);
-        final uploadedImages = await amazonRepo.uploadImages(_selectedImages);
-        uploadedImageUrls = uploadedImages.map((img) => img.imageUrl).toList();
+        final uploadResult = await amazonRepo.uploadImages(_selectedImages);
+        uploadedFileKeys = uploadResult.results
+            .where((r) => r.isSuccess)
+            .map((r) => r.fileKey)
+            .toList();
       }
 
       // 2. Create Location
@@ -147,13 +150,10 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
 
       final request = CreateIssueRequest(
         title: _titleController.text.trim(),
-        content: _descriptionController.text.trim(),
-        mediaUrls: uploadedImageUrls,
+        description: _descriptionController.text.trim(),
+        mediaUrls: uploadedFileKeys,
         categoryId: _categoryMap[_selectedCategory],
         locationId: locationResponse.id,
-        severityScore: _severity.round(),
-        urgencyFlag: _isUrgent,
-        issueStatus: 'PENDING',
       );
 
       final issueResponse = await issueRepository.createIssue(request);

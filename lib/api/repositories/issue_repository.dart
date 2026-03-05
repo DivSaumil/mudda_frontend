@@ -31,8 +31,7 @@ class IssueRepository {
     if (category != null && category.isNotEmpty && category != 'All') {
       requestFilter = IssueFilterRequest(
         status: requestFilter.status,
-        severity: requestFilter.severity,
-        category: category,
+        search: requestFilter.search,
       );
     }
 

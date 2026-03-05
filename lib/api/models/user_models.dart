@@ -1,3 +1,55 @@
+import 'package:mudda_frontend/api/config/constants.dart';
+
+/// Response from GET /api/v1/account/me
+class AccountInfoResponse {
+  final int id;
+  final String username;
+  final String name;
+  final String email;
+  final String? phoneNumber;
+  final String profileImageUrl; // Already resolved to full URL
+  final String role; // CITIZEN | GOVERNMENT | CREATOR
+  final String createAt;
+
+  AccountInfoResponse({
+    required this.id,
+    required this.username,
+    required this.name,
+    required this.email,
+    this.phoneNumber,
+    required this.profileImageUrl,
+    required this.role,
+    required this.createAt,
+  });
+
+  factory AccountInfoResponse.fromJson(Map<String, dynamic> json) {
+    return AccountInfoResponse(
+      id: (json['id'] as int?) ?? 0,
+      username: (json['username'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
+      phoneNumber: json['phoneNumber'] as String?,
+      profileImageUrl: AppConstants.resolveImageUrl(
+        json['profileImageUrl'] as String?,
+      ),
+      role: (json['role'] as String?) ?? 'CITIZEN',
+      createAt:
+          (json['createAt'] as String?) ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'username': username,
+    'name': name,
+    'email': email,
+    'phoneNumber': phoneNumber,
+    'profileImageUrl': profileImageUrl,
+    'role': role,
+    'createAt': createAt,
+  };
+}
+
 class UserDetailResponse {
   final int id;
   final String userName;
@@ -27,13 +79,13 @@ class UserDetailResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'userName': userName,
-        'name': name,
-        'dateOfBirth': dateOfBirth,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-      };
+    'id': id,
+    'userName': userName,
+    'name': name,
+    'dateOfBirth': dateOfBirth,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+  };
 }
 
 class UserSummaryResponse {
@@ -56,10 +108,10 @@ class UserSummaryResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'userName': userName,
-        'name': name,
-      };
+    'id': id,
+    'userName': userName,
+    'name': name,
+  };
 }
 
 class CreateUserRequest {
@@ -74,10 +126,10 @@ class CreateUserRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'userName': userName,
-        'name': name,
-        'dateOfBirth': dateOfBirth,
-      };
+    'userName': userName,
+    'name': name,
+    'dateOfBirth': dateOfBirth,
+  };
 }
 
 class UpdateUserRequest {
@@ -87,9 +139,9 @@ class UpdateUserRequest {
   UpdateUserRequest({this.name, this.dateOfBirth});
 
   Map<String, dynamic> toJson() => {
-        if (name != null) 'name': name,
-        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
-      };
+    if (name != null) 'name': name,
+    if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
+  };
 }
 
 class UserFilterRequest {
@@ -97,9 +149,7 @@ class UserFilterRequest {
 
   UserFilterRequest({this.search});
 
-  Map<String, dynamic> toJson() => {
-        if (search != null) 'search': search,
-      };
+  Map<String, dynamic> toJson() => {if (search != null) 'search': search};
 }
 
 class PageUserSummaryResponse {

@@ -21,20 +21,24 @@ class Vote {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'issueId': issueId,
-        'userId': userId,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'issueId': issueId,
+    'userId': userId,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }
 
 class VoteResponse {
-  final Vote vote;
+  final int voteCount;
+  final bool hasUserVoted;
 
-  VoteResponse({required this.vote});
+  VoteResponse({required this.voteCount, required this.hasUserVoted});
 
   factory VoteResponse.fromJson(Map<String, dynamic> json) {
-    return VoteResponse(vote: Vote.fromJson(json['vote']));
+    return VoteResponse(
+      voteCount: json['vote_count'] ?? 0,
+      hasUserVoted: json['has_user_voted'] ?? false,
+    );
   }
 }
 

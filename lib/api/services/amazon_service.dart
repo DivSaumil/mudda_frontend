@@ -7,21 +7,31 @@ class AmazonImageService {
 
   AmazonImageService(this._dio);
 
-  /// Get all bucket contents
-  /// Returns a list of image file names
-  Future<List<String>> getBucketContents() async {
+  /// Upload a single image to Amazon S3.
+  /// POST /api/v1/amazon/images
+  /// Form field name: "file"
+  /// Returns [ImageUploadResponse] with the fileKey to use in subsequent API calls.
+  Future<ImageUploadResponse> uploadImage(XFile file) async {
     try {
-      final response = await _dio.get('/amazon/images');
-      final List<dynamic> jsonList = response.data;
-      return jsonList.map((item) => item.toString()).toList();
+      final bytes = await file.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: file.name),
+      });
+
+      final response = await _dio.post('/amazon/images', data: formData);
+      return ImageUploadResponse.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
-      throw Exception('Failed to get bucket contents: $e');
+      throw Exception('Failed to upload image: $e');
     }
   }
 
-  /// Upload one or more images to Amazon S3
-  /// Returns a list of uploaded AmazonImage objects
-  Future<List<AmazonImage>> uploadImages(List<XFile> files) async {
+  /// Upload multiple images to Amazon S3 (batch).
+  /// POST /api/v1/amazon/images/batch
+  /// Form field name: "files"
+  /// Returns [BatchImageUploadResponse] containing results for each file.
+  Future<BatchImageUploadResponse> uploadImages(List<XFile> files) async {
     try {
       final formData = FormData();
 
@@ -35,30 +45,20 @@ class AmazonImageService {
         );
       }
 
-      // Use batch endpoint for multiple images
       final response = await _dio.post('/amazon/images/batch', data: formData);
-
-      final List<dynamic> jsonList = response.data;
-      return jsonList
-          .map((item) => AmazonImage.fromJson(item as Map<String, dynamic>))
-          .toList();
+      return BatchImageUploadResponse.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
       throw Exception('Failed to upload images: $e');
     }
   }
 
-  /// Upload a single image to Amazon S3
-  /// Returns the uploaded AmazonImage object
-  Future<AmazonImage> uploadImage(XFile file) async {
-    final result = await uploadImages([file]);
-    return result.first;
-  }
-
-  /// Delete an image from Amazon S3
-  /// [fileName] is the name of the file to delete
-  Future<void> deleteImage(String fileName) async {
+  /// Delete an image from Amazon S3.
+  /// DELETE /api/v1/amazon/images/{fileKey}
+  Future<void> deleteImage(String fileKey) async {
     try {
-      await _dio.delete('/amazon/images/$fileName');
+      await _dio.delete('/amazon/images/$fileKey');
     } catch (e) {
       throw Exception('Failed to delete image: $e');
     }

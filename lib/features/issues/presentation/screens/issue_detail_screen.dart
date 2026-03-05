@@ -70,7 +70,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen>
   void _syncVoteState(IssueResponse issue) {
     if (!_voteInitialized) {
       _localVoteCount = issue.voteCount;
-      _hasVoted = issue.hasUserVoted;
+      _hasVoted = issue.hasUserVoted ?? false;
       _voteInitialized = true;
     }
   }
@@ -179,7 +179,8 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen>
     switch (status.toUpperCase()) {
       case 'OPEN':
         return Colors.orange;
-      case 'SOLVED':
+      case 'RESOLVED':
+        return Colors.teal;
       case 'CLOSED':
         return Colors.green;
       case 'PENDING':
@@ -567,16 +568,21 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen>
             child: CircleAvatar(
               radius: 22,
               backgroundColor: theme.cardColor,
-              child: Text(
-                issue.username.isNotEmpty
-                    ? issue.username[0].toUpperCase()
-                    : 'U',
-                style: TextStyle(
-                  color: cs.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
+              backgroundImage: issue.authorImageUrl.isNotEmpty
+                  ? NetworkImage(issue.authorImageUrl)
+                  : null,
+              child: issue.authorImageUrl.isEmpty
+                  ? Text(
+                      issue.authorName.isNotEmpty
+                          ? issue.authorName[0].toUpperCase()
+                          : 'U',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
@@ -587,7 +593,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen>
                 Row(
                   children: [
                     Text(
-                      issue.username,
+                      issue.authorName,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),

@@ -9,14 +9,13 @@ void main() {
   final testIssue1 = IssueResponse(
     id: 1,
     title: 'Test Issue 1',
-    content: 'Description 1',
-    fullContent: 'Full description 1',
+    description: 'Description 1',
     status: 'OPEN',
     voteCount: 10,
-    comments: 5,
     hasUserVoted: false,
     canUserVote: true,
-    username: 'user1',
+    authorName: 'user1',
+    authorImageUrl: '',
     createdAt: '2024-01-01T00:00:00Z',
     mediaUrls: ['https://example.com/img1.jpg'],
   );
@@ -24,14 +23,13 @@ void main() {
   final testIssue2 = IssueResponse(
     id: 2,
     title: 'Test Issue 2',
-    content: 'Description 2',
-    fullContent: 'Full description 2',
+    description: 'Description 2',
     status: 'PENDING',
     voteCount: 25,
-    comments: 12,
     hasUserVoted: true,
     canUserVote: true,
-    username: 'user2',
+    authorName: 'user2',
+    authorImageUrl: '',
     createdAt: '2024-01-02T00:00:00Z',
     mediaUrls: [],
   );
@@ -55,7 +53,7 @@ void main() {
       expect(cached[0].mediaUrls, ['https://example.com/img1.jpg']);
       expect(cached[1].id, 2);
       expect(cached[1].title, 'Test Issue 2');
-      expect(cached[1].username, 'user2');
+      expect(cached[1].authorName, 'user2');
     });
 
     test('getCachedIssues returns null when no cache exists', () async {
@@ -89,7 +87,7 @@ void main() {
         expect(cached, isNotNull);
         expect(cached!.id, 1);
         expect(cached.title, 'Test Issue 1');
-        expect(cached.content, 'Description 1');
+        expect(cached.description, 'Description 1');
         expect(cached.voteCount, 10);
       },
     );

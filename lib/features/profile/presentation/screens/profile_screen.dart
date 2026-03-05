@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mudda_frontend/api/models/user_models.dart';
 import 'package:mudda_frontend/core/di/providers.dart';
 import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 
@@ -14,13 +15,13 @@ class ProfilePage extends ConsumerStatefulWidget {
 class _ProfilePageState extends ConsumerState<ProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late Future<Map<String, dynamic>> _profileFuture;
+  late Future<AccountInfoResponse> _profileFuture;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _profileFuture = ref.read(authServiceProvider).getProfile();
+    _profileFuture = ref.read(accountServiceProvider).getMe();
   }
 
   @override
@@ -33,7 +34,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA), // Light greyish blue background
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<AccountInfoResponse>(
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -47,15 +48,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           }
 
           final userData = snapshot.data!;
-          // Mocking missing fields for now
-          final String name = userData['name'] ?? 'Unknown User';
-          final String username = userData['userName'] ?? '@unknown';
+          final String name = userData.name.isNotEmpty
+              ? userData.name
+              : 'Unknown User';
+          final String username = userData.username.isNotEmpty
+              ? userData.username
+              : 'unknown';
           final String bio =
               "Passionate about changing the world, one issue at a time. 🌍✨";
-          final String avatarUrl = "https://i.pravatar.cc/300"; // Placeholder
-          final String location = "Mumbai, India";
-          final int followers = 1205;
-          final int following = 450;
+          final String avatarUrl = userData.profileImageUrl;
+          final String userRole = userData.role;
+          final String userEmail = userData.email;
 
           return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -185,9 +188,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                       ),
                                       child: CircleAvatar(
                                         radius: 45,
-                                        backgroundImage: NetworkImage(
-                                          avatarUrl,
-                                        ),
+                                        backgroundImage: avatarUrl.isNotEmpty
+                                            ? NetworkImage(avatarUrl)
+                                            : null,
+                                        child: avatarUrl.isEmpty
+                                            ? Text(
+                                                name.isNotEmpty
+                                                    ? name[0].toUpperCase()
+                                                    : 'U',
+                                                style: const TextStyle(
+                                                  fontSize: 32,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : null,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -229,15 +243,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceEvenly,
                                       children: [
-                                        _buildStatItem("Followers", followers),
-                                        Container(
-                                          height: 20,
-                                          width: 1,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
+                                        _buildStatItem(
+                                          "Role",
+                                          userRole,
+                                          isText: true,
                                         ),
-                                        _buildStatItem("Following", following),
                                         Container(
                                           height: 20,
                                           width: 1,
@@ -246,8 +256,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                           ),
                                         ),
                                         _buildStatItem(
-                                          "Location",
-                                          location,
+                                          "Email",
+                                          userEmail,
                                           isText: true,
                                         ),
                                       ],

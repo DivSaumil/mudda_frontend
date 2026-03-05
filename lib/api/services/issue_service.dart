@@ -19,10 +19,10 @@ class IssueService {
   Future<IssueResponse> createIssue(CreateIssueRequest request) async {
     try {
       final response = await _dio.post('/issues', data: request.toJson());
-      
+
       // Check status code
-      if (response.statusCode != null && 
-          response.statusCode! >= 200 && 
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
           response.statusCode! < 300) {
         final data = response.data;
 
@@ -96,6 +96,7 @@ class IssueService {
     }
   }
 
+  /// Fetches issues with individual query parameters (v1.1 API).
   Future<PageIssueSummaryResponse> getAllIssues({
     IssueFilterRequest? filter,
     int page = 0,
@@ -103,15 +104,16 @@ class IssueService {
     String sortBy = 'CREATED_AT',
     String sortOrder = 'desc',
   }) async {
-    final queryParams = {
+    final queryParams = <String, dynamic>{
       'page': page,
       'size': size,
       'sortBy': sortBy,
       'sortOrder': sortOrder,
     };
 
+    // Add individual filter parameters (v1.1 uses query params, not JSON blob)
     if (filter != null) {
-      queryParams['filterRequest'] = jsonEncode(filter.toJson());
+      queryParams.addAll(filter.toQueryParameters());
     }
 
     try {
@@ -141,13 +143,13 @@ class IssueService {
     return IssueResponse(
       id: 0,
       title: request.title,
-      content: request.content,
+      description: request.description,
       mediaUrls: request.mediaUrls,
       voteCount: 0,
-      comments: 0,
-      fullContent: request.content,
-      status: request.issueStatus,
+      status: 'PENDING',
       createdAt: DateTime.now().toIso8601String(),
+      authorName: 'You',
+      authorImageUrl: '',
       hasUserVoted: false,
       canUserVote: true,
     );

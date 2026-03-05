@@ -25,7 +25,8 @@ void main() {
   // The AuthService uses absolute URLs for auth endpoints (not under /api/v1)
   // Base URL used in tests - must match AppConstants.baseUrl exactly
   // Note: The URL in constants ends with a trailing slash
-  const testBaseUrl = 'http://mudda.us-east-1.elasticbeanstalk.com/';
+  const testBaseUrl =
+      'http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com';
 
   setUp(() {
     // Note: AuthService uses absolute URLs for auth endpoints, so baseUrl here
@@ -241,6 +242,7 @@ void main() {
   group('AuthService.logout', () {
     test('clears token from storage', () async {
       // Arrange
+      when(() => mockStorage.getToken()).thenAnswer((_) async => 'mock_token');
       when(() => mockStorage.deleteToken()).thenAnswer((_) async {});
 
       // Act
@@ -252,16 +254,17 @@ void main() {
   });
 
   group('AuthService.getProfile', () {
-    test('returns profile data on success', () async {
+    test('returns AccountInfoResponse on success', () async {
       // Arrange
       final profileData = {
         'id': 1,
-        'userName': 'testuser',
-        'name': 'Test User',
         'email': 'test@example.com',
+        'role': 'USER',
+        'profileImageUrl': 'https://s3.aws.com/profile.jpg',
       };
+
       dioAdapter.onGet(
-        '/users/profile',
+        '/account/me',
         (server) => server.reply(200, profileData),
       );
 
@@ -269,19 +272,20 @@ void main() {
       final result = await authService.getProfile();
 
       // Assert
-      expect(result['id'], 1);
-      expect(result['userName'], 'testuser');
-      expect(result['name'], 'Test User');
+      expect(result.id, 1);
+      expect(result.email, 'test@example.com');
+      expect(result.role, 'USER');
+      expect(result.profileImageUrl, 'https://s3.aws.com/profile.jpg');
     });
 
     test('throws exception on failure', () async {
       // Arrange
       dioAdapter.onGet(
-        '/users/profile',
+        '/account/me',
         (server) => server.throws(
           401,
           DioException(
-            requestOptions: RequestOptions(path: '/users/profile'),
+            requestOptions: RequestOptions(path: '/account/me'),
             type: DioExceptionType.badResponse,
           ),
         ),

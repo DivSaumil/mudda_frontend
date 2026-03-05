@@ -19,11 +19,13 @@ import 'package:mudda_frontend/api/services/category_service.dart';
 import 'package:mudda_frontend/api/services/location_service.dart';
 import 'package:mudda_frontend/api/services/role_service.dart';
 import 'package:mudda_frontend/api/services/amazon_service.dart';
+import 'package:mudda_frontend/api/services/account_service.dart';
 import 'package:mudda_frontend/api/services/issue_cache_service.dart';
 import 'package:mudda_frontend/api/repositories/issue_repository.dart';
 import 'package:mudda_frontend/api/repositories/vote_repository.dart';
 import 'package:mudda_frontend/api/repositories/comment_repository.dart';
 import 'package:mudda_frontend/api/repositories/amazon_repository.dart';
+import 'package:mudda_frontend/api/repositories/account_repository.dart';
 import 'package:mudda_frontend/api/config/constants.dart';
 
 part 'providers.g.dart';
@@ -148,4 +150,17 @@ AmazonImageService amazonImageService(Ref ref) {
 AmazonImageRepository amazonImageRepository(Ref ref) {
   final service = ref.watch(amazonImageServiceProvider);
   return AmazonImageRepository(service: service);
+}
+
+/// Account service + repository.
+@Riverpod(keepAlive: true)
+AccountService accountService(Ref ref) {
+  final d = ref.watch(dioProvider);
+  return AccountService(d);
+}
+
+@Riverpod(keepAlive: true)
+AccountRepository accountRepository(Ref ref) {
+  final service = ref.watch(accountServiceProvider);
+  return AccountRepository(service: service);
 }

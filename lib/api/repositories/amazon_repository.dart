@@ -8,19 +8,19 @@ class AmazonImageRepository {
   AmazonImageRepository({required AmazonImageService service})
     : _service = service;
 
-  /// Get all bucket contents
-  /// Returns a list of image file names
-  Future<List<String>> getBucketContents() async {
+  /// Upload a single image to Amazon S3.
+  /// Returns [ImageUploadResponse] containing the fileKey.
+  Future<ImageUploadResponse> uploadImage(XFile file) async {
     try {
-      return await _service.getBucketContents();
+      return await _service.uploadImage(file);
     } catch (e) {
-      throw Exception('Repository error: Failed to get bucket contents - $e');
+      throw Exception('Repository error: Failed to upload image - $e');
     }
   }
 
-  /// Upload one or more images to Amazon S3
-  /// Returns a list of uploaded AmazonImage objects
-  Future<List<AmazonImage>> uploadImages(List<XFile> files) async {
+  /// Upload multiple images to Amazon S3 (batch).
+  /// Returns [BatchImageUploadResponse] containing results for each file.
+  Future<BatchImageUploadResponse> uploadImages(List<XFile> files) async {
     try {
       if (files.isEmpty) {
         throw Exception('No files provided for upload');
@@ -31,24 +31,13 @@ class AmazonImageRepository {
     }
   }
 
-  /// Upload a single image to Amazon S3
-  /// Returns the uploaded AmazonImage object
-  Future<AmazonImage> uploadImage(XFile file) async {
+  /// Delete an image from Amazon S3 by its fileKey.
+  Future<void> deleteImage(String fileKey) async {
     try {
-      return await _service.uploadImage(file);
-    } catch (e) {
-      throw Exception('Repository error: Failed to upload image - $e');
-    }
-  }
-
-  /// Delete an image from Amazon S3
-  /// [fileName] is the name of the file to delete
-  Future<void> deleteImage(String fileName) async {
-    try {
-      if (fileName.isEmpty) {
-        throw Exception('File name cannot be empty');
+      if (fileKey.isEmpty) {
+        throw Exception('File key cannot be empty');
       }
-      await _service.deleteImage(fileName);
+      await _service.deleteImage(fileKey);
     } catch (e) {
       throw Exception('Repository error: Failed to delete image - $e');
     }
