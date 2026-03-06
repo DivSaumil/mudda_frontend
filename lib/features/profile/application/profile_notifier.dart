@@ -11,16 +11,20 @@ class ProfileState {
   final PageIssueSummaryResponse? userIssues;
   final bool isLoading;
   final bool isIssuesLoading;
+  final bool isUploadingImage;
   final String? error;
   final String? issuesError;
+  final String? uploadError;
 
   const ProfileState({
     this.profile,
     this.userIssues,
     this.isLoading = false,
     this.isIssuesLoading = false,
+    this.isUploadingImage = false,
     this.error,
     this.issuesError,
+    this.uploadError,
   });
 
   ProfileState copyWith({
@@ -28,16 +32,20 @@ class ProfileState {
     PageIssueSummaryResponse? userIssues,
     bool? isLoading,
     bool? isIssuesLoading,
+    bool? isUploadingImage,
     String? error,
     String? issuesError,
+    String? uploadError,
   }) {
     return ProfileState(
       profile: profile ?? this.profile,
       userIssues: userIssues ?? this.userIssues,
       isLoading: isLoading ?? this.isLoading,
       isIssuesLoading: isIssuesLoading ?? this.isIssuesLoading,
+      isUploadingImage: isUploadingImage ?? this.isUploadingImage,
       error: error,
       issuesError: issuesError,
+      uploadError: uploadError,
     );
   }
 
@@ -85,6 +93,35 @@ class ProfileNotifier extends _$ProfileNotifier {
       state = state.copyWith(isIssuesLoading: false, userIssues: issues);
     } catch (e) {
       state = state.copyWith(isIssuesLoading: false, issuesError: e.toString());
+    }
+  }
+
+  Future<bool> uploadProfilePicture(dynamic file) async {
+    // We accept dynamic here to avoid importing image_picker in the notifier
+    // it should be an XFile from image_picker.
+    state = state.copyWith(isUploadingImage: true, uploadError: null);
+
+    try {
+      final amazonRepo = ref.read(amazonImageRepositoryProvider);
+      final accountRepo = ref.read(accountRepositoryProvider);
+
+      // 1. Upload to S3
+      final uploadResponse = await amazonRepo.uploadImage(file);
+
+      // 2. Update profile with new image key
+      await accountRepo.updateProfileImage(uploadResponse.fileKey);
+
+      // 3. Refresh profile to get the new image URL
+      await fetchProfile();
+
+      state = state.copyWith(isUploadingImage: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isUploadingImage: false,
+        uploadError: e.toString(),
+      );
+      return false;
     }
   }
 

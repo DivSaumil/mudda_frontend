@@ -25,6 +25,12 @@ class AppColors {
   static const Color primaryLight = Color(0xFFB388FF);
   static const Color primaryDark = Color(0xFF512DA8);
 
+  // ============ Secondary/Accent Colors ============
+
+  /// Eye-catching accent color for primary actions/FABs
+  static const Color accent = Color(0xFF00BFA5); // Teal A700
+  static const Color accentDark = Color(0xFF1DE9B6); // Teal A400
+
   // ============ Background Colors ============
 
   /// Main scaffold background
@@ -33,7 +39,9 @@ class AppColors {
 
   /// Card and surface background
   static const Color surface = Colors.white;
-  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color surfaceDark = Color(
+    0xFF242424,
+  ); // Elevated dark surface for depth
 
   /// Elevated surface (modals, bottom sheets)
   static const Color surfaceElevated = Colors.white;

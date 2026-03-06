@@ -22,6 +22,16 @@ class AppTheme {
       primarySwatch: Colors.deepPurple,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.scaffoldBackground,
+      splashColor: AppColors.primary.withValues(alpha: 0.1),
+      highlightColor: AppColors.primary.withValues(alpha: 0.05),
+
+      // Page Transitions
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
 
       // Color Scheme
       colorScheme: ColorScheme.light(
@@ -48,13 +58,16 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
         color: AppColors.surface,
       ),
 
       // Text Theme
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: AppTypography.displayLarge,
         headlineLarge: AppTypography.headlineLarge,
         headlineMedium: AppTypography.headlineMedium,
@@ -181,6 +194,16 @@ class AppTheme {
       primarySwatch: Colors.deepPurple,
       primaryColor: AppColors.primaryDarkTheme,
       scaffoldBackgroundColor: AppColors.scaffoldBackgroundDark,
+      splashColor: AppColors.primaryDarkTheme.withValues(alpha: 0.1),
+      highlightColor: AppColors.primaryDarkTheme.withValues(alpha: 0.05),
+
+      // Page Transitions
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
 
       // Color Scheme
       colorScheme: ColorScheme.dark(
@@ -207,26 +230,55 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderDark),
+        ),
         color: AppColors.surfaceDark,
       ),
 
       // Text Theme
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(color: AppColors.textPrimaryDark),
-        headlineLarge: TextStyle(color: AppColors.textPrimaryDark),
-        headlineMedium: TextStyle(color: AppColors.textPrimaryDark),
-        headlineSmall: TextStyle(color: AppColors.textPrimaryDark),
-        titleLarge: TextStyle(color: AppColors.textPrimaryDark),
-        titleMedium: TextStyle(color: AppColors.textPrimaryDark),
-        titleSmall: TextStyle(color: AppColors.textPrimaryDark),
-        bodyLarge: TextStyle(color: AppColors.textPrimaryDark),
-        bodyMedium: TextStyle(color: AppColors.textSecondaryDark),
-        bodySmall: TextStyle(color: AppColors.textSecondaryDark),
-        labelLarge: TextStyle(color: AppColors.textPrimaryDark),
-        labelMedium: TextStyle(color: AppColors.textSecondaryDark),
-        labelSmall: TextStyle(color: AppColors.textSecondaryDark),
+      textTheme: TextTheme(
+        displayLarge: AppTypography.displayLarge.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        headlineLarge: AppTypography.headlineLarge.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        headlineMedium: AppTypography.headlineMedium.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        headlineSmall: AppTypography.headlineSmall.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        titleLarge: AppTypography.titleLarge.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        titleMedium: AppTypography.titleMedium.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        titleSmall: AppTypography.titleSmall.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        bodyLarge: AppTypography.bodyLarge.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        bodyMedium: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textSecondaryDark,
+        ),
+        bodySmall: AppTypography.bodySmall.copyWith(
+          color: AppColors.textSecondaryDark,
+        ),
+        labelLarge: AppTypography.labelLarge.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        labelMedium: AppTypography.labelMedium.copyWith(
+          color: AppColors.textSecondaryDark,
+        ),
+        labelSmall: AppTypography.labelSmall.copyWith(
+          color: AppColors.textSecondaryDark,
+        ),
       ),
 
       // Tab Bar Theme

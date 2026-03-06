@@ -3,15 +3,15 @@ import 'package:flutter/foundation.dart';
 class AppConstants {
   static String get baseUrl {
     if (kIsWeb) {
-      return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+      return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
     } else {
-      return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+      return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
     }
   }
 
   /// Base URL specifically for auth routes.
   static String get authBaseUrl {
-    return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+    return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
   }
 
   /// CDN origin for resolving image keys to full URLs.

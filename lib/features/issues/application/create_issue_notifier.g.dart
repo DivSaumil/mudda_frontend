@@ -7,7 +7,7 @@ part of 'create_issue_notifier.dart';
 // **************************************************************************
 
 String _$createIssueNotifierHash() =>
-    r'b658c76e2671bc46eddcaeb0f7c3ac63ec9f8f0e';
+    r'75cc40dc04135a03ea5fe057debf46bd20e9191c';
 
 /// Notifier for managing issue creation state.
 ///

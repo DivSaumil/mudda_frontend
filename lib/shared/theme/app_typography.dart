@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// Centralized typography definitions.
@@ -17,7 +18,7 @@ class AppTypography {
   // ============ Display (Large Headlines) ============
 
   /// Large display text - used for hero sections
-  static const TextStyle displayLarge = TextStyle(
+  static final TextStyle displayLarge = GoogleFonts.plusJakartaSans(
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
@@ -28,7 +29,7 @@ class AppTypography {
   // ============ Headlines ============
 
   /// Main page titles
-  static const TextStyle headlineLarge = TextStyle(
+  static final TextStyle headlineLarge = GoogleFonts.plusJakartaSans(
     fontSize: 24,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
@@ -36,14 +37,14 @@ class AppTypography {
   );
 
   /// Section headers
-  static const TextStyle headlineMedium = TextStyle(
+  static final TextStyle headlineMedium = GoogleFonts.plusJakartaSans(
     fontSize: 20,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
   );
 
   /// Subsection headers
-  static const TextStyle headlineSmall = TextStyle(
+  static final TextStyle headlineSmall = GoogleFonts.plusJakartaSans(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -52,21 +53,21 @@ class AppTypography {
   // ============ Titles ============
 
   /// Card titles, list item titles
-  static const TextStyle titleLarge = TextStyle(
+  static final TextStyle titleLarge = GoogleFonts.plusJakartaSans(
     fontSize: 18,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
   );
 
   /// Smaller titles
-  static const TextStyle titleMedium = TextStyle(
+  static final TextStyle titleMedium = GoogleFonts.plusJakartaSans(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
   /// Smallest titles
-  static const TextStyle titleSmall = TextStyle(
+  static final TextStyle titleSmall = GoogleFonts.plusJakartaSans(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -75,7 +76,7 @@ class AppTypography {
   // ============ Body Text ============
 
   /// Main body text
-  static const TextStyle bodyLarge = TextStyle(
+  static final TextStyle bodyLarge = GoogleFonts.plusJakartaSans(
     fontSize: 16,
     fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
@@ -83,7 +84,7 @@ class AppTypography {
   );
 
   /// Standard body text
-  static const TextStyle bodyMedium = TextStyle(
+  static final TextStyle bodyMedium = GoogleFonts.plusJakartaSans(
     fontSize: 15,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
@@ -91,7 +92,7 @@ class AppTypography {
   );
 
   /// Smaller body text
-  static const TextStyle bodySmall = TextStyle(
+  static final TextStyle bodySmall = GoogleFonts.plusJakartaSans(
     fontSize: 13,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
@@ -101,7 +102,7 @@ class AppTypography {
   // ============ Labels ============
 
   /// Button labels, form labels
-  static const TextStyle labelLarge = TextStyle(
+  static final TextStyle labelLarge = GoogleFonts.plusJakartaSans(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -109,14 +110,14 @@ class AppTypography {
   );
 
   /// Smaller labels, tags
-  static const TextStyle labelMedium = TextStyle(
+  static final TextStyle labelMedium = GoogleFonts.plusJakartaSans(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     color: AppColors.textSecondary,
   );
 
   /// Tiny labels, timestamps
-  static const TextStyle labelSmall = TextStyle(
+  static final TextStyle labelSmall = GoogleFonts.plusJakartaSans(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     color: AppColors.textHint,
@@ -125,28 +126,28 @@ class AppTypography {
   // ============ Special Styles ============
 
   /// Username display
-  static const TextStyle username = TextStyle(
+  static final TextStyle username = GoogleFonts.plusJakartaSans(
     fontSize: 14,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
 
   /// Timestamp display
-  static const TextStyle timestamp = TextStyle(
+  static final TextStyle timestamp = GoogleFonts.plusJakartaSans(
     fontSize: 12,
     fontWeight: FontWeight.normal,
     color: AppColors.textHint,
   );
 
   /// Status badge text
-  static const TextStyle statusBadge = TextStyle(
+  static final TextStyle statusBadge = GoogleFonts.plusJakartaSans(
     fontSize: 10,
     fontWeight: FontWeight.bold,
     letterSpacing: 0.5,
   );
 
   /// Vote/stat count
-  static const TextStyle statCount = TextStyle(
+  static final TextStyle statCount = GoogleFonts.plusJakartaSans(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textSecondary,
