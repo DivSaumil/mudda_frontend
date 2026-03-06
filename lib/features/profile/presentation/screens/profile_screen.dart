@@ -109,7 +109,7 @@ class ProfilePage extends ConsumerWidget {
     return Column(
       children: [
         Stack(
-          alignment: Alignment.bottomRight,
+          clipBehavior: Clip.none,
           children: [
             GestureDetector(
               onTap: state.isUploadingImage
@@ -183,18 +183,6 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ),
             ),
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.verified, color: Colors.blue, size: 24),
-              ),
-            ),
             if (state.isUploadingImage)
               Positioned.fill(
                 child: Container(
@@ -210,21 +198,44 @@ class ProfilePage extends ConsumerWidget {
             else
               Positioned(
                 bottom: 0,
-                left: 0,
+                right: -8,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.accent, // Teal Accent
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Icon(
-                    Icons.camera_alt,
+                    Icons.edit_outlined,
                     color: Colors.white,
-                    size: 16,
+                    size: 18,
                   ),
                 ),
               ),
+            // Verified Badge
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified, color: Colors.blue, size: 24),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -281,10 +292,23 @@ class ProfilePage extends ConsumerWidget {
             context,
             "Issues",
             totalIssues.toString(),
+            Icons.report_problem_rounded,
             Colors.indigo,
           ),
-          _buildStatCard(context, "Solved", "12", Colors.green), // Mocked
-          _buildStatCard(context, "Rank", "Top 5%", Colors.orange), // Mocked
+          _buildStatCard(
+            context,
+            "Solved",
+            "12",
+            Icons.check_circle_rounded,
+            Colors.green,
+          ), // Mocked
+          _buildStatCard(
+            context,
+            "Rank",
+            "Top 5%",
+            Icons.emoji_events_rounded,
+            Colors.orange,
+          ), // Mocked
         ],
       ),
     );
@@ -294,40 +318,39 @@ class ProfilePage extends ConsumerWidget {
     BuildContext context,
     String label,
     String value,
+    IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: color.withValues(alpha: isDark ? 0.1 : 0.05),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
         ),
         child: Column(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).hintColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
+            Icon(icon, color: color.withValues(alpha: 0.8), size: 24),
+            const SizedBox(height: 12),
             Text(
               value,
               style: TextStyle(
                 color: color,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).hintColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -454,9 +477,31 @@ class ProfilePage extends ConsumerWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
-                child: Text(
-                  "No active issues yet.",
-                  style: TextStyle(color: Theme.of(context).hintColor),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 64,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "No active issues yet.",
+                      style: TextStyle(
+                        color: Theme.of(context).hintColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Issues you report will appear here.",
+                      style: TextStyle(color: Theme.of(context).hintColor),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             )
@@ -572,18 +617,36 @@ class ProfilePage extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(20), // Pill shaped
+                  border: Border.all(color: statusColor.withValues(alpha: 0.2)),
                 ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
