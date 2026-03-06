@@ -3,20 +3,19 @@ import 'package:flutter/foundation.dart';
 class AppConstants {
   static String get baseUrl {
     if (kIsWeb) {
-      return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+      return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
     } else {
-      return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+      return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
     }
   }
 
   /// Base URL specifically for auth routes.
   static String get authBaseUrl {
-    return "http://mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
+    return "http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com";
   }
 
   /// CDN origin for resolving image keys to full URLs.
-  static const String cdnOrigin =
-      'https://media-url-devbucket-20256.s3.us-east-1.amazonaws.com';
+  static const String cdnOrigin = 'https://cdn.mudda.dev';
 
   /// Resolves an image value from the API into a full displayable URL.
   ///

@@ -53,6 +53,7 @@ class MockIssueRepository implements IssueRepository {
   Future<FetchIssuesResult> fetchIssues({
     IssueFilterRequest? filter,
     String? category,
+    int? categoryId,
     int page = 0,
     int size = 20,
   }) async {

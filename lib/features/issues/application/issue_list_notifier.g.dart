@@ -6,7 +6,7 @@ part of 'issue_list_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$issueListNotifierHash() => r'c7ec007e76c1280ea5eda3587a8225ef0ae7cdd0';
+String _$issueListNotifierHash() => r'bfef494eeb1860a977333661d867590a702b32e8';
 
 /// See also [IssueListNotifier].
 @ProviderFor(IssueListNotifier)

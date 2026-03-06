@@ -23,15 +23,17 @@ class IssueRepository {
   Future<FetchIssuesResult> fetchIssues({
     IssueFilterRequest? filter,
     String? category,
+    int? categoryId,
     int page = 0,
     int size = 20,
   }) async {
-    // If category is provided, ensure it's added to the filter
+    // Build filter, injecting categoryId when provided
     IssueFilterRequest requestFilter = filter ?? IssueFilterRequest();
-    if (category != null && category.isNotEmpty && category != 'All') {
+    if (categoryId != null) {
       requestFilter = IssueFilterRequest(
         status: requestFilter.status,
         search: requestFilter.search,
+        categoryId: categoryId,
       );
     }
 

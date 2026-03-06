@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mudda_frontend/api/models/category_models.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/models/location_models.dart';
 
 import 'package:mudda_frontend/core/di/providers.dart';
+import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/screens/location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:mudda_frontend/shared/widgets/animated_button.dart';
+import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
 
 class CreateIssuePage extends ConsumerStatefulWidget {
   const CreateIssuePage({super.key});
@@ -26,24 +30,11 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
   bool _isLoading = false;
 
   // Issue Data
-  String? _selectedCategory;
+  CategoryResponse? _selectedCategory;
   double _severity = 1.0;
   bool _isUrgent = false;
   LatLng? _selectedLocation;
   final List<XFile> _selectedImages = [];
-
-  final Map<String, int> _categoryMap = {
-    'Sanitation': 1,
-    'Electricity': 2,
-    'Water': 3,
-    'Road': 4,
-    'Infra': 5,
-    'Corruption': 6,
-    'Municipality': 7,
-    'Administrative': 8,
-    'Education': 9,
-    'Other': 10,
-  };
 
   @override
   void dispose() {
@@ -80,17 +71,13 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
 
     if (_selectedCategory == null) {
       setState(() => _currentStep = 0);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a category')));
+      SnackbarUtil.showError(context, 'Please select a category');
       return;
     }
 
     if (_selectedLocation == null) {
       setState(() => _currentStep = 2);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a location')));
+      SnackbarUtil.showError(context, 'Please select a location');
       return;
     }
 
@@ -152,20 +139,16 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         mediaUrls: uploadedFileKeys,
-        categoryId: _categoryMap[_selectedCategory],
+        categoryId: _selectedCategory!.id,
         locationId: locationResponse.id,
       );
 
       final issueResponse = await issueRepository.createIssue(request);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '✅ Issue created successfully! (ID: ${issueResponse.id})',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
+        SnackbarUtil.showSuccess(
+          context,
+          'Issue created successfully! (ID: ${issueResponse.id})',
         );
         // Wait a bit before popping to ensure snackbar is visible
         await Future.delayed(const Duration(milliseconds: 500));
@@ -177,13 +160,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
       debugPrint('Error creating issue: $e');
       debugPrint('Stack trace: $stackTrace');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Failed: ${e.toString()}'),
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackbarUtil.showError(context, 'Failed: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -205,9 +182,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
             if (_currentStep == 0) {
               if (!_formKey.currentState!.validate()) return;
               if (_selectedCategory == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please select a category')),
-                );
+                SnackbarUtil.showError(context, 'Please select a category');
                 return;
               }
               setState(() => _currentStep += 1);
@@ -230,30 +205,63 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
               child: Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
+                    child: AnimatedButton(
                       onPressed: _isLoading ? null : details.onStepContinue,
-                      style: ElevatedButton.styleFrom(
+                      child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                        decoration: BoxDecoration(
+                          color: _isLoading
+                              ? Theme.of(context).disabledColor
+                              : Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        alignment: Alignment.center,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                _currentStep == 2 ? 'SUBMIT' : 'NEXT',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
-                            )
-                          : Text(_currentStep == 2 ? 'SUBMIT' : 'NEXT'),
+                      ),
                     ),
                   ),
                   if (_currentStep > 0) ...[
                     const SizedBox(width: 12),
-                    TextButton(
+                    AnimatedButton(
                       onPressed: _isLoading ? null : details.onStepCancel,
-                      child: const Text('BACK'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'BACK',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -290,21 +298,46 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
                         value!.isEmpty ? 'Please enter a description' : null,
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _categoryMap.keys.map((String category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
+                  Builder(
+                    builder: (context) {
+                      final categoriesAsync = ref.watch(
+                        categoryNotifierProvider,
                       );
-                    }).toList(),
-                    onChanged: (val) => setState(() => _selectedCategory = val),
-                    validator: (value) =>
-                        value == null ? 'Please select a category' : null,
+                      return categoriesAsync.when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, _) => Center(
+                          child: TextButton.icon(
+                            onPressed: () => ref
+                                .read(categoryNotifierProvider.notifier)
+                                .refresh(),
+                            icon: const Icon(Icons.refresh, size: 16),
+                            label: const Text('Retry loading categories'),
+                          ),
+                        ),
+                        data: (categories) =>
+                            DropdownButtonFormField<CategoryResponse>(
+                              initialValue: _selectedCategory,
+                              decoration: const InputDecoration(
+                                labelText: 'Category',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: categories.map((
+                                CategoryResponse category,
+                              ) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) =>
+                                  setState(() => _selectedCategory = val),
+                              validator: (value) => value == null
+                                  ? 'Please select a category'
+                                  : null,
+                            ),
+                      );
+                    },
                   ),
                 ],
               ),

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/models/user_models.dart';
 import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 import 'package:mudda_frontend/shared/theme/app_colors.dart';
 import 'package:mudda_frontend/features/profile/application/profile_notifier.dart';
+import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
+import 'package:mudda_frontend/shared/widgets/animated_button.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -39,10 +42,27 @@ class ProfilePage extends ConsumerWidget {
             children: [
               Text('Error loading profile: ${profileState.error}'),
               const SizedBox(height: 16),
-              ElevatedButton(
+              AnimatedButton(
                 onPressed: () =>
                     ref.read(profileNotifierProvider.notifier).refresh(),
-                child: const Text('Retry'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Text(
+                    'RETRY',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -111,8 +131,8 @@ class ProfilePage extends ConsumerWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            GestureDetector(
-              onTap: state.isUploadingImage
+            AnimatedButton(
+              onPressed: state.isUploadingImage
                   ? null
                   : () async {
                       final picker = ImagePicker();
@@ -130,23 +150,17 @@ class ProfilePage extends ConsumerWidget {
 
                         if (context.mounted) {
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Profile picture updated successfully!',
-                                ),
-                              ),
+                            SnackbarUtil.showSuccess(
+                              context,
+                              'Profile picture updated successfully!',
                             );
                           } else {
                             final error = ref
                                 .read(profileNotifierProvider)
                                 .uploadError;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  error ?? 'Failed to update profile picture.',
-                                ),
-                              ),
+                            SnackbarUtil.showError(
+                              context,
+                              error ?? 'Failed to update profile picture.',
                             );
                           }
                         }
@@ -521,7 +535,7 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactIssueCard(BuildContext context, dynamic issue) {
+  Widget _buildCompactIssueCard(BuildContext context, IssueResponse issue) {
     // This uses a custom compact UI based on the inspiration, rather than the full IssueCard
     // which has too much info for this list view.
     // issue is IssueResponse from userIssues.issues
@@ -578,7 +592,7 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Reported recently • ${issue.categoryId.toString()}", // Mocking time for brevity, using categoryId as mock string
+                      "Reported recently • ${issue.category ?? 'General'}", // Mocking time for brevity, using categoryId as mock string
                       style: TextStyle(
                         color: Theme.of(context).hintColor,
                         fontSize: 12,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/application/issue_list_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/widgets/issue_card.dart';
 
@@ -13,13 +14,6 @@ class IssueFeedScreen extends ConsumerStatefulWidget {
 
 class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
   final ScrollController _scrollController = ScrollController();
-  final List<String> _categories = [
-    'All',
-    'Infrastructure',
-    'Safety',
-    'Environment',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -48,6 +42,7 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
   @override
   Widget build(BuildContext context) {
     final issueState = ref.watch(issueListNotifierProvider);
+    final categoriesAsync = ref.watch(categoryNotifierProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -58,39 +53,67 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
             height: 60,
             padding: const EdgeInsets.symmetric(vertical: 10),
             color: Theme.of(context).cardColor,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = issueState.maybeMap(
-                  loaded: (loaded) => loaded.category == category,
-                  orElse: () => category == 'All',
-                );
-
-                return ChoiceChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      ref
-                          .read(issueListNotifierProvider.notifier)
-                          .filterByCategory(category);
-                    }
-                  },
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  backgroundColor: Theme.of(context).cardColor,
-                  labelStyle: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).textTheme.bodyLarge?.color,
-                    fontWeight: FontWeight.w500,
+            child: categoriesAsync.when(
+              loading: () => const Center(
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (error, _) => Center(
+                child: TextButton.icon(
+                  onPressed: () =>
+                      ref.read(categoryNotifierProvider.notifier).refresh(),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Retry'),
+                ),
+              ),
+              data: (categories) {
+                // Build chip list: "All" + backend categories
+                final chipItems = <_CategoryChipItem>[
+                  const _CategoryChipItem(name: 'All', id: null),
+                  ...categories.map(
+                    (c) => _CategoryChipItem(name: c.name, id: c.id),
                   ),
-                  side: isSelected
-                      ? BorderSide.none
-                      : BorderSide(color: Theme.of(context).dividerColor),
+                ];
+
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: chipItems.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final chip = chipItems[index];
+                    final isSelected = issueState.maybeMap(
+                      loaded: (loaded) => loaded.category == chip.name,
+                      orElse: () => chip.name == 'All',
+                    );
+
+                    return ChoiceChip(
+                      label: Text(chip.name),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          ref
+                              .read(issueListNotifierProvider.notifier)
+                              .filterByCategory(chip.name, categoryId: chip.id);
+                        }
+                      },
+                      selectedColor: Theme.of(context).colorScheme.primary,
+                      backgroundColor: Theme.of(context).cardColor,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).textTheme.bodyLarge?.color,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      side: isSelected
+                          ? BorderSide.none
+                          : BorderSide(color: Theme.of(context).dividerColor),
+                    );
+                  },
                 );
               },
             ),
@@ -220,4 +243,12 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
       ),
     );
   }
+}
+
+/// Helper class to pair category name with its backend id.
+class _CategoryChipItem {
+  final String name;
+  final int? id;
+
+  const _CategoryChipItem({required this.name, this.id});
 }

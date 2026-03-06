@@ -8,22 +8,27 @@ part 'issue_list_notifier.g.dart';
 class IssueListNotifier extends _$IssueListNotifier {
   int _page = 0;
   final int _pageSize = 20;
+  int? _currentCategoryId;
 
   @override
   IssueState build() {
     return const IssueState.initial();
   }
 
-  Future<void> loadInitialIssues({String category = 'All'}) async {
+  Future<void> loadInitialIssues({
+    String category = 'All',
+    int? categoryId,
+  }) async {
     state = const IssueState.loading();
     _page = 0;
+    _currentCategoryId = categoryId;
 
     try {
       final repository = ref.read(issueRepositoryProvider);
-      final validCategory = category == 'All' ? null : category;
 
       final result = await repository.fetchIssues(
-        category: validCategory,
+        category: category,
+        categoryId: categoryId,
         page: _page,
         size: _pageSize,
       );
@@ -61,12 +66,9 @@ class IssueListNotifier extends _$IssueListNotifier {
           final repository = ref.read(issueRepositoryProvider);
           final nextpage = _page + 1;
 
-          final validCategory = loaded.category == 'All'
-              ? null
-              : loaded.category;
-
           final result = await repository.fetchIssues(
-            category: validCategory,
+            category: loaded.category,
+            categoryId: _currentCategoryId,
             page: nextpage,
             size: _pageSize,
           );
@@ -87,13 +89,13 @@ class IssueListNotifier extends _$IssueListNotifier {
     );
   }
 
-  Future<void> filterByCategory(String category) async {
+  Future<void> filterByCategory(String category, {int? categoryId}) async {
     final currentCat = state.maybeMap(
       loaded: (loaded) => loaded.category,
       orElse: () => null,
     );
 
     if (currentCat == category) return;
-    await loadInitialIssues(category: category);
+    await loadInitialIssues(category: category, categoryId: categoryId);
   }
 }
