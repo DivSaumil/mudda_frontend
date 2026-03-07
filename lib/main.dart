@@ -5,8 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mudda_frontend/core/navigation/app_router.dart';
 import 'package:mudda_frontend/shared/theme/app_theme.dart';
 import 'package:mudda_frontend/shared/theme/theme_controller.dart';
+import 'package:mudda_frontend/core/notifications/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Register background handler for FCM
+  // FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Initialize notifications
+  await NotificationService().initialize();
+
   runApp(const ProviderScope(child: MuddaApp()));
 }
 

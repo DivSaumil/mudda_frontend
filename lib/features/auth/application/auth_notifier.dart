@@ -15,6 +15,7 @@ import '../../../api/services/storage_service.dart';
 import '../../../api/services/auth_service.dart';
 import '../../../api/models/auth_models.dart';
 import 'auth_state.dart';
+import '../../../core/notifications/notification_service.dart';
 
 part 'auth_notifier.g.dart';
 
@@ -84,6 +85,10 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AsyncValue.loading();
 
     try {
+      // Fetch FCM token to include during registration
+      final fcmToken = await NotificationService().getDeviceToken();
+      debugPrint('Including FCM Token during signup: $fcmToken');
+
       await _authService.signup(
         SignupRequest(
           userName: userName,
@@ -93,6 +98,7 @@ class AuthNotifier extends _$AuthNotifier {
           phoneNumber: phoneNumber,
           password: password,
           profileImageUrl: profileImageUrl,
+          fcmToken: fcmToken,
         ),
       );
 

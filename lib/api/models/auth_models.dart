@@ -21,6 +21,7 @@ class SignupRequest {
   final String password;
   final UserRole role;
   final String? profileImageUrl;
+  final String? fcmToken;
 
   SignupRequest({
     required this.userName,
@@ -31,6 +32,7 @@ class SignupRequest {
     required this.password,
     this.role = UserRole.citizen,
     this.profileImageUrl,
+    this.fcmToken,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,6 +45,7 @@ class SignupRequest {
       'password': password,
       'role': role.toJson(),
       'profileImageUrl': profileImageUrl,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 }
