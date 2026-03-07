@@ -64,10 +64,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Signup failed: ${state.error}')));
     } else if (!state.isLoading) {
-      // Signup successful, AuthGate will handle navigation
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signup successful!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Signup successful! Please verify your email before logging in.',
+          ),
+        ),
+      );
       Navigator.pop(context);
     }
   }

@@ -69,6 +69,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  void _showForgotPasswordDialog() {
+    final emailCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Forgot Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter your email address to receive a password reset link.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              if (email.isEmpty || !email.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid email address'),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext); // Close dialog
+
+              try {
+                // Read from notifier using ref
+                await ref
+                    .read(authNotifierProvider.notifier)
+                    .forgotPassword(email);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset link sent to your email'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
@@ -182,9 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {
-                                // TODO: Implement forgot password
-                              },
+                              onPressed: _showForgotPasswordDialog,
                               child: const Text('Forgot Password?'),
                             ),
                           ),

@@ -102,10 +102,19 @@ class AuthNotifier extends _$AuthNotifier {
         ),
       );
 
-      // After signup, log the user in
-      await login(userName, password);
+      // Successfully signed up. Do not auto-login to enforce email verification.
+      state = const AsyncValue.data(AuthState.unauthenticated());
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Sends a forgot password request.
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _authService.forgotPassword(email);
+    } catch (e) {
+      throw Exception('Failed to send password reset link: $e');
     }
   }
 

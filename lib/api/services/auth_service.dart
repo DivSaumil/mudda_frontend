@@ -42,9 +42,10 @@ class AuthService {
         data: request.toJson(),
       );
       final loginResponse = LoginResponse.fromJson(response.data);
-      if (loginResponse.token.isNotEmpty) {
-        await _storageService.saveToken(loginResponse.token);
+      if (loginResponse.token.isEmpty) {
+        throw Exception('Login not approved or pending verification.');
       }
+      await _storageService.saveToken(loginResponse.token);
       return loginResponse;
     } catch (e) {
       throw Exception('Login failed: $e');
@@ -100,6 +101,23 @@ class AuthService {
       }
     } finally {
       await _storageService.deleteToken();
+    }
+  }
+
+  /// Requests a password reset link to be sent to the given email.
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await _dio.post(
+        '${legacy_constants.AppConstants.authBaseUrl}/auth/forgot-password',
+        data: {'email': email},
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to send reset link');
+      }
+    } on DioException catch (e) {
+      throw Exception(
+        'Forgot password error: ${e.response?.data ?? e.message}',
+      );
     }
   }
 

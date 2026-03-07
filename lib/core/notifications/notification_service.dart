@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -12,17 +13,14 @@ class NotificationService {
 
   NotificationService._internal();
 
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  /// Initialize Firebase and the notification service.
-  /// Currently Firebase initialization is commented out as the google-services
-  /// files are pending from the backend team.
+  /// Initialize the notification service.
+  /// Note: Firebase.initializeApp() should be called before this.
   Future<void> initialize() async {
     try {
-      // TODO: Uncomment when google-services.json / GoogleService-Info.plist are added.
-      // await Firebase.initializeApp();
-
       await _requestPermissions();
       await _setupLocalNotifications();
       _setupForegroundMessageListener();
@@ -35,13 +33,12 @@ class NotificationService {
   /// Requests notification permissions from the user.
   Future<void> _requestPermissions() async {
     try {
-      // Will only work if Firebase.initializeApp() was called successfully
-      // NotificationSettings settings = await _messaging.requestPermission(
-      //   alert: true,
-      //   badge: true,
-      //   sound: true,
-      // );
-      // debugPrint('User granted permission: ${settings.authorizationStatus}');
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
     } catch (e) {
       debugPrint('Error requesting permissions: $e');
     }
@@ -96,22 +93,24 @@ class NotificationService {
 
   /// Sets up the listener for messages when the app is in the foreground.
   void _setupForegroundMessageListener() {
-    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    //   debugPrint('Got a message whilst in the foreground!');
-    //   debugPrint('Message data: ${message.data}');
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Got a message whilst in the foreground!');
+      debugPrint('Message data: ${message.data}');
 
-    //   if (message.notification != null) {
-    //     debugPrint('Message also contained a notification: ${message.notification}');
-    //     _showLocalNotification(message);
-    //   }
-    // });
+      if (message.notification != null) {
+        debugPrint(
+          'Message also contained a notification: ${message.notification}',
+        );
+        _showLocalNotification(message);
+      }
+    });
   }
 
   void _setupBackgroundMessageListener() {
-    // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    //    debugPrint('A new onMessageOpenedApp event was published!');
-    //    // TODO: Handle routing.
-    // });
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('A new onMessageOpenedApp event was published!');
+      // TODO: Handle routing.
+    });
   }
 
   /// Displays a local notification using the `flutter_local_notifications` plugin.
@@ -141,15 +140,9 @@ class NotificationService {
   /// Used primarily during signup based on current backend constraints.
   Future<String?> getDeviceToken() async {
     try {
-      // TODO: Uncomment when Firebase is properly initialized.
-      // String? token = await _messaging.getToken();
-      // debugPrint('FCM Token: $token');
-      // return token;
-
-      debugPrint(
-        'FCM Token fetching is mocked until Firebase is initialized fully.',
-      );
-      return 'mocked_fcm_token_12345'; // Mocked token for testing registration
+      String? token = await _messaging.getToken();
+      debugPrint('FCM Token: $token');
+      return token;
     } catch (e) {
       debugPrint('Error getting FCM token: $e');
       return null;
@@ -160,8 +153,6 @@ class NotificationService {
 /// Top-level background message handler.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
-  // await Firebase.initializeApp();
+  await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
 }
