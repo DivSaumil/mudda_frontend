@@ -317,6 +317,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
                         ),
                         data: (categories) =>
                             DropdownButtonFormField<CategoryResponse>(
+                              isExpanded: true,
                               initialValue: _selectedCategory,
                               decoration: const InputDecoration(
                                 labelText: 'Category',
@@ -327,7 +328,10 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
                               ) {
                                 return DropdownMenuItem(
                                   value: category,
-                                  child: Text(category.name),
+                                  child: Text(
+                                    category.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 );
                               }).toList(),
                               onChanged: (val) =>
