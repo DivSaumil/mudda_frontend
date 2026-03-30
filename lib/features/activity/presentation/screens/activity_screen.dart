@@ -73,8 +73,14 @@ class AccountActivityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Account Activity')),
+      backgroundColor: cs.surfaceContainerLow,
+      appBar: AppBar(
+        title: const Text('Account Activity', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+        backgroundColor: cs.surfaceContainerLow,
+        forceMaterialTransparency: true,
+      ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: dummyAccountActivities.length,
@@ -95,9 +101,12 @@ class AccountActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

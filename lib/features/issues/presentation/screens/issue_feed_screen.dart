@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/application/issue_list_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/widgets/issue_card.dart';
+import 'package:mudda_frontend/features/community/presentation/screens/community_hub_screen.dart';
 
 class IssueFeedScreen extends ConsumerStatefulWidget {
   const IssueFeedScreen({super.key});
@@ -44,10 +45,27 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
     final issueState = ref.watch(issueListNotifierProvider);
     final categoriesAsync = ref.watch(categoryNotifierProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Column(
-        children: [
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          toolbarHeight: 0,
+          bottom: const TabBar(
+            labelStyle: TextStyle(fontWeight: FontWeight.w800, fontFamily: 'Plus Jakarta Sans'),
+            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Plus Jakarta Sans'),
+            indicatorColor: Color(0xFF4F46E5), // Civic Indigo
+            tabs: [
+              Tab(text: "Global"),
+              Tab(text: "Neighborhood"),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // Global Context Tab
+            Column(
+              children: [
           // Category Filter
           Container(
             height: 60,
@@ -241,7 +259,12 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
           ),
         ],
       ),
-    );
+      // Neighborhood Context Tab
+      const CommunityHubScreen(),
+    ],
+  ),
+),
+);
   }
 }
 

@@ -22,6 +22,8 @@ class IssueResponse {
   final double? severityScore;
   final Map<String, dynamic>? locationSummary;
   final String? category;
+  final String? officialResponse;
+  final int? communityId;
 
   IssueResponse({
     required this.id,
@@ -43,6 +45,8 @@ class IssueResponse {
     this.severityScore,
     this.locationSummary,
     this.category,
+    this.officialResponse,
+    this.communityId,
   });
 
   // Helper to get the first image URL if available
@@ -104,6 +108,8 @@ class IssueResponse {
       severityScore: (json['severity_score'] as num?)?.toDouble(),
       locationSummary: json['locationSummary'] as Map<String, dynamic>?,
       category: json['category'] as String?,
+      officialResponse: json['official_response'] as String?,
+      communityId: json['community_id'] as int?,
     );
   }
 
@@ -128,6 +134,8 @@ class IssueResponse {
       'severity_score': severityScore,
       'locationSummary': locationSummary,
       'category': category,
+      'official_response': officialResponse,
+      'community_id': communityId,
     };
   }
 }

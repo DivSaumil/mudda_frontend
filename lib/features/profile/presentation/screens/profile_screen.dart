@@ -292,6 +292,41 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        // Social Graph Stats & Follow Action
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              children: [
+                const Text("124", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Followers", style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(width: 24),
+            Column(
+              children: [
+                const Text("89", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Following", style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Mock Follow UI
+        ElevatedButton.icon(
+          icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+          label: const Text("Follow"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          ),
+          onPressed: () {
+            SnackbarUtil.showSuccess(context, "You are now following ${userData.name.isNotEmpty ? userData.name : 'this user'}!");
+          },
+        ),
       ],
     );
   }

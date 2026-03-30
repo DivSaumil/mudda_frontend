@@ -247,6 +247,26 @@ class _IssueCardState extends ConsumerState<IssueCard>
                 ],
               ),
             ),
+            // Community Context Badge (if applicable)
+            if (widget.issue.communityId != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(Icons.home_work_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Neighborhood Local',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (widget.issue.communityId != null) const SizedBox(height: 12),
 
             // Image
             if (widget.issue.firstImageUrl != null)
@@ -288,6 +308,42 @@ class _IssueCardState extends ConsumerState<IssueCard>
                     ),
                   ],
                   const SizedBox(height: 16),
+                  
+                  // Official Response
+                  if (widget.issue.officialResponse != null && widget.issue.officialResponse!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
+                              const SizedBox(width: 6),
+                              Text(
+                                "Official Response",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.issue.officialResponse!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // Actions
                   Row(

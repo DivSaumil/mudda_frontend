@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mudda_frontend/core/navigation/app_router.dart';
 
 /// Centralized service for handling Push Notifications.
 class NotificationService {
@@ -88,7 +90,24 @@ class NotificationService {
     debugPrint(
       'Foreground notification tapped with payload: ${response.payload}',
     );
-    // TODO: Handle routing based on payload string (e.g., encoded JSON).
+    // Routing using rootNavigatorKey
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) return;
+    
+    // Stub logic for routing:
+    // We assume payload is JSON but keep it simple string matching for now
+    final payload = response.payload ?? '';
+    if (payload.contains('community_announcement')) {
+         // Assuming Dashboard uses Neighborhood tab as index 1, or just go to home for now
+         // Given "global" vs "neighborhood" is governed by TabController in IssueFeedScreen,
+         // We might just route to home which maintains the state. 
+         context.go(AppRoutes.home);
+         debugPrint('Routed to Home / Community Hub (Announcement)');
+    } else if (payload.contains('mention')) {
+         // Typical mention routes to the specific issue
+         // e.g. context.go('/issue/123')
+         debugPrint('Route to specific issue comment thread (Mention)');
+    }
   }
 
   /// Sets up the listener for messages when the app is in the foreground.
@@ -109,7 +128,16 @@ class NotificationService {
   void _setupBackgroundMessageListener() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('A new onMessageOpenedApp event was published!');
-      // TODO: Handle routing.
+      
+      final context = rootNavigatorKey.currentContext;
+      if (context == null) return;
+
+      if (message.data['type'] == 'community_announcement') {
+        context.go(AppRoutes.home);
+        debugPrint('Routed to Home / Community Hub for announcement');
+      } else if (message.data['type'] == 'mention') {
+        debugPrint('Route to specific issue comment thread (Mention)');
+      }
     });
   }
 
@@ -155,4 +183,11 @@ class NotificationService {
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
+  
+  // Stub for Community/Social background processing
+  if (message.data['type'] == 'community_announcement') {
+    debugPrint('Stub: Processing background community announcement');
+  } else if (message.data['type'] == 'mention') {
+    debugPrint('Stub: Processing background @mention logic');
+  }
 }

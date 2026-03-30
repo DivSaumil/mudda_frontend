@@ -13,6 +13,8 @@ import 'package:mudda_frontend/features/about/presentation/screens/about_us_scre
 import 'package:mudda_frontend/features/issues/presentation/screens/issue_detail_screen.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/core/navigation/bottom_nav_shell.dart';
+import 'package:mudda_frontend/features/community/domain/entities/community_models.dart';
+import 'package:mudda_frontend/features/community/presentation/screens/initiative_detail_screen.dart';
 
 /// Route paths
 class AppRoutes {
@@ -24,6 +26,7 @@ class AppRoutes {
   static const String activity = '/activity';
   static const String profile = '/profile';
   static const String issueDetail = '/issue/:id';
+  static const String initiativeDetail = '/initiative/:id';
   static const String dashboard = '/dashboard';
   static const String about = '/about';
 }
@@ -65,11 +68,14 @@ class RouterNotifier extends ChangeNotifier {
   }
 }
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// GoRouter provider
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = RouterNotifier(ref);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
     refreshListenable: notifier,
@@ -143,6 +149,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           return CustomTransitionPage(
             key: state.pageKey,
             child: IssueDetailScreen(issueId: id, initialIssue: issue),
+            transitionDuration: const Duration(milliseconds: 400),
+            reverseTransitionDuration: const Duration(milliseconds: 350),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  final slideTween =
+                      Tween<Offset>(
+                        begin: const Offset(1.0, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
+                  return SlideTransition(position: slideTween, child: child);
+                },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.initiativeDetail,
+        name: 'initiativeDetail',
+        pageBuilder: (context, state) {
+          final initiative = state.extra as CommunityInitiative;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: InitiativeDetailScreen(initiative: initiative),
             transitionDuration: const Duration(milliseconds: 400),
             reverseTransitionDuration: const Duration(milliseconds: 350),
             transitionsBuilder:

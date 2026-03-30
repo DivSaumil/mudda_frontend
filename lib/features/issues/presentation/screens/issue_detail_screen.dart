@@ -1163,9 +1163,13 @@ class _CommentTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    comment.content,
-                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                  RichText(
+                    text: _buildMentionTextSpan(
+                      comment.content,
+                      theme.textTheme.bodyMedium?.copyWith(height: 1.5) ??
+                          const TextStyle(height: 1.5, color: Colors.black87),
+                      colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   // Actions
@@ -1208,6 +1212,34 @@ class _CommentTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  TextSpan _buildMentionTextSpan(String text, TextStyle baseStyle, Color mentionColor) {
+    final RegExp mentionRegex = RegExp(r'@[\w.]+');
+    final List<TextSpan> spans = [];
+    int start = 0;
+
+    for (var match in mentionRegex.allMatches(text)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: text.substring(start, match.start), style: baseStyle));
+      }
+      spans.add(
+        TextSpan(
+          text: match.group(0),
+          style: baseStyle.copyWith(
+            color: mentionColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+    }
+
+    return TextSpan(children: spans);
   }
 }
 
