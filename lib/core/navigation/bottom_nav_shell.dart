@@ -23,10 +23,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
     if (location.startsWith(AppRoutes.home) && location == AppRoutes.home) {
       return 0;
     }
-    if (location.startsWith(AppRoutes.search)) return 1;
-    if (location.startsWith(AppRoutes.create)) return 2;
-    if (location.startsWith(AppRoutes.activity)) return 3;
-    if (location.startsWith(AppRoutes.profile)) return 4;
+    if (location.startsWith(AppRoutes.create)) return 1;
+    if (location.startsWith(AppRoutes.activity)) return 2;
+    if (location.startsWith(AppRoutes.profile)) return 3;
     return 0;
   }
 
@@ -36,15 +35,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
         context.go(AppRoutes.home);
         break;
       case 1:
-        context.go(AppRoutes.search);
-        break;
-      case 2:
         context.go(AppRoutes.create);
         break;
-      case 3:
+      case 2:
         context.go(AppRoutes.activity);
         break;
-      case 4:
+      case 3:
         context.go(AppRoutes.profile);
         break;
     }
@@ -93,11 +89,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Search',
-          ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline),
             activeIcon: Icon(Icons.add_circle),

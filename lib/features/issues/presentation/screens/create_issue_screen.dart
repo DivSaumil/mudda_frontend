@@ -1,6 +1,9 @@
-import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mudda_frontend/api/models/category_models.dart';
@@ -11,8 +14,22 @@ import 'package:mudda_frontend/core/di/providers.dart';
 import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/screens/location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:mudda_frontend/shared/widgets/animated_button.dart';
 import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
+
+// ─── Design Tokens ───────────────────────────────────────────────────────────
+
+class _C {
+  static const Color primary = Color(0xFF4F46E5);
+  static const Color surface = Color(0xFFF8F9FF);
+  static const Color surfaceLow = Color(0xFFEFF4FF);
+  static const Color surfaceLowest = Color(0xFFFFFFFF);
+  static const Color onSurface = Color(0xFF0B1C30);
+  static const Color onSurfaceVariant = Color(0xFF464555);
+  static const Color outlineVariant = Color(0xFFC7C4D8);
+  static const Color inkBlack = Color(0xFF0F172A);
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
 
 class CreateIssuePage extends ConsumerStatefulWidget {
   const CreateIssuePage({super.key});
@@ -21,47 +38,90 @@ class CreateIssuePage extends ConsumerStatefulWidget {
   ConsumerState<CreateIssuePage> createState() => _CreateIssuePageState();
 }
 
-class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
+class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _scrollController = ScrollController();
 
-  int _currentStep = 0;
   bool _isLoading = false;
 
-  // Issue Data
   CategoryResponse? _selectedCategory;
-  double _severity = 1.0;
-  bool _isUrgent = false;
   LatLng? _selectedLocation;
+  String _locationLabel = 'Auto-fetching location...';
+  String _locationSubLabel = 'Tap Edit to choose on map';
   final List<XFile> _selectedImages = [];
+
+
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    )..forward();
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _scrollController.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
   Future<void> _pickImages() async {
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> images = await picker.pickMultiImage();
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
     if (images.isNotEmpty) {
-      setState(() {
-        _selectedImages.addAll(images);
-      });
+      setState(() => _selectedImages.addAll(images));
     }
+  }
+
+  Future<void> _takePhoto() async {
+    final picker = ImagePicker();
+    final photo = await picker.pickImage(source: ImageSource.camera);
+    if (photo != null) {
+      setState(() => _selectedImages.add(photo));
+    }
+  }
+
+  void _showMediaOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _MediaBottomSheet(
+        onGallery: () {
+          Navigator.pop(context);
+          _pickImages();
+        },
+        onCamera: () {
+          Navigator.pop(context);
+          _takePhoto();
+        },
+      ),
+    );
   }
 
   Future<void> _pickLocation() async {
     final LatLng? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const LocationPickerPage()),
+      MaterialPageRoute(builder: (_) => const LocationPickerPage()),
     );
-
     if (result != null) {
       setState(() {
         _selectedLocation = result;
+        _locationLabel =
+            '${result.latitude.toStringAsFixed(4)}, ${result.longitude.toStringAsFixed(4)}';
+        _locationSubLabel = 'Tap Edit to choose again';
       });
     }
   }
@@ -70,13 +130,10 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedCategory == null) {
-      setState(() => _currentStep = 0);
       SnackbarUtil.showError(context, 'Please select a category');
       return;
     }
-
     if (_selectedLocation == null) {
-      setState(() => _currentStep = 2);
       SnackbarUtil.showError(context, 'Please select a location');
       return;
     }
@@ -84,7 +141,7 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Upload Images
+      // 1. Upload images
       List<String> uploadedFileKeys = [];
       if (_selectedImages.isNotEmpty) {
         final amazonRepo = ref.read(amazonImageRepositoryProvider);
@@ -95,30 +152,28 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
             .toList();
       }
 
-      // 2. Create Location
-      final locationService = ref.read(locationServiceProvider);
-
-      // Fetch address details from coordinates
+      // 2. Reverse-geocode location
       List<Placemark> placemarks = await placemarkFromCoordinates(
         _selectedLocation!.latitude,
         _selectedLocation!.longitude,
       );
 
-      String pinCode = "000000";
-      String addressLine = "Unknown Address";
-      String state = "Unknown State";
-      String city = "Unknown City";
+      String pinCode = '000000';
+      String addressLine = 'Unknown Address';
+      String state = 'Unknown State';
+      String city = 'Unknown City';
 
       if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-        pinCode = place.postalCode ?? "000000";
-        if (pinCode.isEmpty) pinCode = "000000";
-        addressLine =
-            "${place.street}, ${place.subLocality}, ${place.locality}";
-        state = place.administrativeArea ?? "Unknown State";
-        city = place.locality ?? place.subAdministrativeArea ?? "Unknown City";
+        final p = placemarks.first;
+        pinCode = p.postalCode ?? '000000';
+        if (pinCode.isEmpty) pinCode = '000000';
+        addressLine = '${p.street}, ${p.subLocality}, ${p.locality}';
+        state = p.administrativeArea ?? 'Unknown State';
+        city = p.locality ?? p.subAdministrativeArea ?? 'Unknown City';
       }
 
+      // 3. Create location
+      final locationService = ref.read(locationServiceProvider);
       final locationResponse = await locationService.createLocation(
         CreateLocationRequest(
           pinCode: pinCode,
@@ -132,9 +187,8 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
         ),
       );
 
-      // 3. Create Issue
+      // 4. Create issue
       final issueRepository = ref.read(issueRepositoryProvider);
-
       final request = CreateIssueRequest(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -148,379 +202,405 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
       if (mounted) {
         SnackbarUtil.showSuccess(
           context,
-          'Issue created successfully! (ID: ${issueResponse.id})',
+          'Issue submitted! (ID: ${issueResponse.id})',
         );
-        // Wait a bit before popping to ensure snackbar is visible
         await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted && Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
+        if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       }
-    } catch (e, stackTrace) {
-      debugPrint('Error creating issue: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e, st) {
+      debugPrint('Error creating issue: $e\n$st');
       if (mounted) {
         SnackbarUtil.showError(context, 'Failed: ${e.toString()}');
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Report an Issue')),
-      body: Form(
-        key: _formKey,
-        child: Stepper(
-          type: StepperType.horizontal,
-          currentStep: _currentStep,
-          onStepContinue: () {
-            if (_currentStep == 0) {
-              if (!_formKey.currentState!.validate()) return;
-              if (_selectedCategory == null) {
-                SnackbarUtil.showError(context, 'Please select a category');
-                return;
-              }
-              setState(() => _currentStep += 1);
-            } else if (_currentStep == 1) {
-              setState(() => _currentStep += 1);
-            } else {
-              _submitIssue();
-            }
-          },
-          onStepCancel: () {
-            if (_currentStep > 0) {
-              setState(() => _currentStep -= 1);
-            } else {
-              Navigator.pop(context);
-            }
-          },
-          controlsBuilder: (context, details) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AnimatedButton(
-                      onPressed: _isLoading ? null : details.onStepContinue,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: _isLoading
-                              ? Theme.of(context).disabledColor
-                              : Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        alignment: Alignment.center,
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                _currentStep == 2 ? 'SUBMIT' : 'NEXT',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  if (_currentStep > 0) ...[
-                    const SizedBox(width: 12),
-                    AnimatedButton(
-                      onPressed: _isLoading ? null : details.onStepCancel,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 24,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'BACK',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-          steps: [
-            Step(
-              title: const Text('Details'),
-              isActive: _currentStep >= 0,
-              state: _currentStep > 0 ? StepState.complete : StepState.editing,
-              content: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      hintText: 'Brief summary of the issue',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter a title' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      hintText: 'Detailed explanation...',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter a description' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Builder(
-                    builder: (context) {
-                      final categoriesAsync = ref.watch(
-                        categoryNotifierProvider,
-                      );
-                      return categoriesAsync.when(
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (error, _) => Center(
-                          child: TextButton.icon(
-                            onPressed: () => ref
-                                .read(categoryNotifierProvider.notifier)
-                                .refresh(),
-                            icon: const Icon(Icons.refresh, size: 16),
-                            label: const Text('Retry loading categories'),
-                          ),
-                        ),
-                        data: (categories) =>
-                            DropdownButtonFormField<CategoryResponse>(
-                              isExpanded: true,
-                              initialValue: _selectedCategory,
-                              decoration: const InputDecoration(
-                                labelText: 'Category',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: categories.map((
-                                CategoryResponse category,
-                              ) {
-                                return DropdownMenuItem(
-                                  value: category,
-                                  child: Text(
-                                    category.name,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) =>
-                                  setState(() => _selectedCategory = val),
-                              validator: (value) => value == null
-                                  ? 'Please select a category'
-                                  : null,
-                            ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Specifics'),
-              isActive: _currentStep >= 1,
-              state: _currentStep > 1 ? StepState.complete : StepState.editing,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Severity Level',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Slider(
-                    value: _severity,
-                    min: 1,
-                    max: 10,
-                    divisions: 9,
-                    label: _severity.round().toString(),
-                    onChanged: (val) => setState(() => _severity = val),
-                  ),
-                  Text(
-                    'Level: ${_severity.round()} - ${_getSeverityLabel(_severity.round())}',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 24),
-                  SwitchListTile(
-                    title: const Text('Is this urgent?'),
-                    subtitle: const Text('Requires immediate attention'),
-                    value: _isUrgent,
-                    onChanged: (val) => setState(() => _isUrgent = val),
-                  ),
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Evidence'),
-              isActive: _currentStep >= 2,
-              state: StepState.editing,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Location Section
-                  const Text(
-                    'Location',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _pickLocation,
-                    child: Container(
-                      height: 150,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[400]!),
-                      ),
-                      child: _selectedLocation == null
-                          ? const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.map, size: 40, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text('Tap to select location on map'),
-                              ],
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 40,
-                                  color: Colors.red,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Lat: ${_selectedLocation!.latitude.toStringAsFixed(4)}, Lng: ${_selectedLocation!.longitude.toStringAsFixed(4)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const Text(
-                                  'Tap to change',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+    final categoriesAsync = ref.watch(categoryNotifierProvider);
 
-                  // Images Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: _C.surface,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Form(
+          key: _formKey,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── Header ────────────────────────────────────────────────
+              SliverToBoxAdapter(child: _buildHeader()),
+
+              // ── Evidence & Media ──────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  label: 'EVIDENCE & MEDIA',
+                  child: _buildMediaUpload(),
+                ),
+              ),
+
+              // ── Issue Description ─────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  label: 'ISSUE DESCRIPTION',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Images',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      // Title field
+                      _buildTextField(
+                        controller: _titleController,
+                        hint: 'Brief issue title',
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Enter a title' : null,
                       ),
-                      TextButton.icon(
-                        onPressed: _pickImages,
-                        icon: const Icon(Icons.add_photo_alternate),
-                        label: const Text('Add Images'),
+                      const SizedBox(height: 12),
+                      // Description field
+                      _buildTextField(
+                        controller: _descriptionController,
+                        hint: "What's the issue?",
+                        maxLines: 5,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Enter a description'
+                            : null,
                       ),
                     ],
                   ),
-                  if (_selectedImages.isNotEmpty)
-                    SizedBox(
-                      height: 100,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: FutureBuilder<Uint8List>(
-                                    future: _selectedImages[index]
-                                        .readAsBytes(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                              ConnectionState.done &&
-                                          snapshot.hasData) {
-                                        return Image.memory(
-                                          snapshot.data!,
-                                          fit: BoxFit.cover,
-                                        );
-                                      } else {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 4,
-                                top: 4,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedImages.removeAt(index);
-                                    });
-                                  },
-                                  child: const CircleAvatar(
-                                    radius: 10,
-                                    backgroundColor: Colors.black54,
-                                    child: Icon(
-                                      Icons.close,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                ),
+              ),
+
+              // ── Select Category ───────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  label: 'SELECT CATEGORY',
+                  child: categoriesAsync.when(
+                    loading: () => const _CategorySkeleton(),
+                    error: (e, _) => _CategoryError(
+                      onRetry: () => ref
+                          .read(categoryNotifierProvider.notifier)
+                          .refresh(),
+                    ),
+                    data: (categories) => _CategoryChips(
+                      categories: categories,
+                      selected: _selectedCategory,
+                      onSelect: (c) => setState(() => _selectedCategory = c),
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Location Context ──────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  label: 'LOCATION CONTEXT',
+                  child: _buildLocationCard(),
+                ),
+              ),
+
+              // ── Submit button + bottom padding ───────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                  child: _buildSubmitButton(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Sub-builders ──────────────────────────────────────────────────────────
+
+  Widget _buildHeader() {
+    return Container(
+      color: _C.surfaceLowest,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 24,
+        right: 16,
+        bottom: 20,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Report an Issue',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: _C.inkBlack,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.maybePop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _C.surfaceLow,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.close_rounded, size: 20, color: _C.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection({required String label, required Widget child}) {
+    return Container(
+      color: _C.surface,
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _C.onSurfaceVariant,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaUpload() {
+    if (_selectedImages.isEmpty) {
+      return GestureDetector(
+        onTap: _showMediaOptions,
+        child: Container(
+          width: double.infinity,
+          height: 150,
+          decoration: BoxDecoration(
+            color: _C.surfaceLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _C.outlineVariant.withValues(alpha: 0.5),
+              width: 1.5,
+              // Dashed effect via CustomPaint below
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Dashed border overlay
+              Positioned.fill(
+                child: CustomPaint(painter: _DashedBorderPainter()),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: _C.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: _C.primary,
+                        size: 26,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Tap to upload or take photo',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: _C.inkBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'JPEG, PNG or MP4 up to 15MB',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: _C.onSurfaceVariant,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show selected images grid
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 110,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _selectedImages.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              if (index == _selectedImages.length) {
+                // "Add more" tile
+                return GestureDetector(
+                  onTap: _showMediaOptions,
+                  child: Container(
+                    width: 90,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: _C.surfaceLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.add_rounded, color: _C.primary, size: 28),
+                  ),
+                );
+              }
+              return _ImageTile(
+                file: _selectedImages[index],
+                onRemove: () => setState(() => _selectedImages.removeAt(index)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      validator: validator,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+        color: _C.inkBlack,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: _C.onSurfaceVariant.withValues(alpha: 0.6),
+        ),
+        filled: true,
+        fillColor: _C.surfaceLow,
+        contentPadding: const EdgeInsets.all(16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: _C.outlineVariant.withValues(alpha: 0.25),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: _C.primary.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard() {
+    return GestureDetector(
+      onTap: _pickLocation,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _C.surfaceLow,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF34D399), Color(0xFF059669)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.location_on_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _locationLabel,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: _C.inkBlack,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _locationSubLabel,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: _C.onSurfaceVariant,
+                    ),
+                  ),
                 ],
+              ),
+            ),
+            Text(
+              'Edit',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _C.primary,
               ),
             ),
           ],
@@ -529,9 +609,426 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage> {
     );
   }
 
-  String _getSeverityLabel(int score) {
-    if (score <= 3) return 'Low';
-    if (score <= 7) return 'Medium';
-    return 'High';
+  Widget _buildSubmitButton() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: _isLoading
+            ? null
+            : const LinearGradient(
+                colors: [Color(0xFF3525CD), Color(0xFF4F46E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                transform: GradientRotation(135 * 3.14159 / 180),
+              ),
+        color: _isLoading ? _C.outlineVariant : null,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _isLoading
+            ? null
+            : [
+                BoxShadow(
+                  color: _C.primary.withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _submitIssue,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Text(
+                    'Submit to AI Governance',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
   }
+}
+
+// ─── Category Chips ───────────────────────────────────────────────────────────
+
+class _CategoryChips extends StatelessWidget {
+  final List<CategoryResponse> categories;
+  final CategoryResponse? selected;
+  final ValueChanged<CategoryResponse> onSelect;
+
+  const _CategoryChips({
+    required this.categories,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: categories.map((cat) {
+          final isSelected = selected?.id == cat.id;
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () => onSelect(cat),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF3525CD), Color(0xFF4F46E5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isSelected ? null : _C.surfaceLow,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: _C.primary.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  cat.name,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? Colors.white : _C.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─── Category Loading Skeleton ────────────────────────────────────────────────
+
+class _CategorySkeleton extends StatelessWidget {
+  const _CategorySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(
+        3,
+        (i) => Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: Container(
+            width: 90,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _C.surfaceLow,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Category Error ───────────────────────────────────────────────────────────
+
+class _CategoryError extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _CategoryError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onRetry,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: _C.surfaceLow,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.refresh_rounded, size: 16, color: _C.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Retry loading categories',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _C.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Image Tile ────────────────────────────────────────────────────────────────
+
+class _ImageTile extends StatelessWidget {
+  final XFile file;
+  final VoidCallback onRemove;
+
+  const _ImageTile({required this.file, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: kIsWeb
+              ? FutureBuilder<Uint8List>(
+                  future: file.readAsBytes(),
+                  builder: (_, snap) {
+                    if (snap.hasData) {
+                      return Image.memory(
+                        snap.data!,
+                        width: 90,
+                        height: 110,
+                        fit: BoxFit.cover,
+                      );
+                    }
+                    return Container(
+                      width: 90,
+                      height: 110,
+                      color: _C.surfaceLow,
+                    );
+                  },
+                )
+              : Image.network(
+                  file.path,
+                  width: 90,
+                  height: 110,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => FutureBuilder<Uint8List>(
+                    future: file.readAsBytes(),
+                    builder: (_, snap) {
+                      if (snap.hasData) {
+                        return Image.memory(
+                          snap.data!,
+                          width: 90,
+                          height: 110,
+                          fit: BoxFit.cover,
+                        );
+                      }
+                      return Container(
+                        width: 90,
+                        height: 110,
+                        color: _C.surfaceLow,
+                      );
+                    },
+                  ),
+                ),
+        ),
+        Positioned(
+          top: 6,
+          right: 6,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: _C.onSurface.withValues(alpha: 0.65),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Media Bottom Sheet ───────────────────────────────────────────────────────
+
+class _MediaBottomSheet extends StatelessWidget {
+  final VoidCallback onGallery;
+  final VoidCallback onCamera;
+
+  const _MediaBottomSheet({required this.onGallery, required this.onCamera});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _C.surfaceLowest,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _C.outlineVariant,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Add Evidence',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: _C.inkBlack,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _SheetOption(
+            icon: Icons.photo_library_rounded,
+            title: 'Choose from Gallery',
+            subtitle: 'Select images from your device',
+            onTap: onGallery,
+          ),
+          _SheetOption(
+            icon: Icons.camera_alt_rounded,
+            title: 'Take a Photo',
+            subtitle: 'Use camera to capture evidence',
+            onTap: onCamera,
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SheetOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: _C.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: _C.primary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _C.inkBlack,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: _C.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Dashed Border Painter ────────────────────────────────────────────────────
+
+class _DashedBorderPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _C.outlineVariant.withValues(alpha: 0.55)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    const double dashWidth = 8;
+    const double dashSpace = 6;
+    const double radius = 16;
+
+    final path = ui.Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0.75, 0.75, size.width - 1.5, size.height - 1.5),
+          const Radius.circular(radius),
+        ),
+      );
+
+    final ui.PathMetrics metrics = path.computeMetrics();
+    for (final metric in metrics) {
+      double start = 0;
+      while (start < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(start, start + dashWidth),
+          paint,
+        );
+        start += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

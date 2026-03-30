@@ -49,7 +49,7 @@ dependencies:
   # Existing dependencies
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
-  google_fonts: ^6.3.2
+  google_fonts: ^8.0.2
   flutter_secure_storage: ^9.2.4
   dio: ^5.9.0
   image_picker: ^1.2.1
