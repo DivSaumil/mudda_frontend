@@ -130,7 +130,7 @@ class NotificationService {
       debugPrint('A new onMessageOpenedApp event was published!');
       
       final context = rootNavigatorKey.currentContext;
-      if (context == null) return;
+      if (context == null || !context.mounted) return;
 
       if (message.data['type'] == 'community_announcement') {
         context.go(AppRoutes.home);

@@ -317,7 +317,7 @@ class _IssueCardState extends ConsumerState<IssueCard>
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

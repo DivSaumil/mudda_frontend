@@ -61,17 +61,12 @@ dependencies:
   firebase_core: ^4.5.0
   firebase_messaging: ^16.1.2
   flutter_local_notifications: ^20.1.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
-
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/logo2.png"
-
 
   # Code Generators
   build_runner: ^2.4.8
@@ -94,6 +89,11 @@ flutter_launcher_icons:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo2.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

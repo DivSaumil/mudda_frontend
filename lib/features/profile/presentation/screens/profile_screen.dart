@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/api/models/user_models.dart';
-import 'package:mudda_frontend/shared/theme/theme_controller.dart';
+// import 'package:mudda_frontend/shared/theme/theme_controller.dart';
 import 'package:mudda_frontend/shared/theme/app_colors.dart';
 import 'package:mudda_frontend/features/profile/application/profile_notifier.dart';
 import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
@@ -16,22 +16,9 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileNotifierProvider);
-    final themeController = ref.watch(themeControllerProvider);
-    final isDark = themeController == ThemeMode.dark;
 
     if (profileState.isLoading && profileState.profile == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Profile',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
-        body: _buildProfileSkeleton(context),
-      );
+      return Scaffold(body: SafeArea(child: _buildProfileSkeleton(context)));
     }
 
     if (profileState.error != null && profileState.profile == null) {
@@ -75,45 +62,24 @@ class ProfilePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () {
-              ref.read(themeControllerProvider.notifier).toggleTheme();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: Navigate to settings
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(profileNotifierProvider.notifier).refresh(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              _buildHeader(context, userData, ref, profileState),
-              const SizedBox(height: 24),
-              _buildStatsRow(context, userIssues?.totalElements ?? 0),
-              const SizedBox(height: 32),
-              _buildCommunitiesSection(context),
-              const SizedBox(height: 32),
-              _buildActiveIssuesSection(context, profileState),
-              const SizedBox(height: 40),
-            ],
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () => ref.read(profileNotifierProvider.notifier).refresh(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                _buildHeader(context, userData, ref, profileState),
+                const SizedBox(height: 24),
+                _buildStatsRow(context, userIssues?.totalElements ?? 0),
+                const SizedBox(height: 32),
+                _buildCommunitiesSection(context),
+                const SizedBox(height: 32),
+                _buildActiveIssuesSection(context, profileState),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -172,13 +138,13 @@ class ProfilePage extends ConsumerWidget {
                   border: Border.all(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.2),
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                     width: 4,
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   backgroundImage: userData.profileImageUrl.isNotEmpty
                       ? NetworkImage(userData.profileImageUrl)
                       : null,
@@ -299,15 +265,33 @@ class ProfilePage extends ConsumerWidget {
           children: [
             Column(
               children: [
-                const Text("124", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text("Followers", style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
+                const Text(
+                  "124",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                Text(
+                  "Followers",
+                  style: TextStyle(
+                    color: Theme.of(context).hintColor,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
             const SizedBox(width: 24),
             Column(
               children: [
-                const Text("89", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text("Following", style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
+                const Text(
+                  "89",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                Text(
+                  "Following",
+                  style: TextStyle(
+                    color: Theme.of(context).hintColor,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ],
@@ -320,11 +304,16 @@ class ProfilePage extends ConsumerWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
           ),
           onPressed: () {
-            SnackbarUtil.showSuccess(context, "You are now following ${userData.name.isNotEmpty ? userData.name : 'this user'}!");
+            SnackbarUtil.showSuccess(
+              context,
+              "You are now following ${userData.name.isNotEmpty ? userData.name : 'this user'}!",
+            );
           },
         ),
       ],

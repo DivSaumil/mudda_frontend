@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -337,18 +336,6 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
                 color: _C.inkBlack,
                 letterSpacing: -0.3,
               ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.maybePop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _C.surfaceLow,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.close_rounded, size: 20, color: _C.onSurfaceVariant),
             ),
           ),
         ],
