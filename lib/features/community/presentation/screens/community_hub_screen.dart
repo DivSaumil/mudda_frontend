@@ -55,44 +55,56 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
     }
 
     final theme = Theme.of(context);
-    // Design System Tokens
-    final Color surfaceContainerLow = theme.colorScheme.surfaceContainerHighest; // Approximation
-    final Color surface = theme.colorScheme.surface;
-    final Color civicIndigo = const Color(0xFF4F46E5);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Adaptive civic indigo — brighter in dark mode for contrast
+    final Color civicIndigo = isDark
+        ? const Color(0xFF818CF8) // indigo-400
+        : const Color(0xFF4F46E5); // indigo-600
+
+    // Adaptive surface for cards/containers
+    final Color cardSurface = isDark ? cs.surface : Colors.white;
+    final Color containerSurface = cs.surfaceContainerHighest;
 
     return Scaffold(
-      backgroundColor: surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
+          // ────────────────────────────────────────────────
           // 1. Map View Hero Section
+          // ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Container(
               height: 250,
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 16),
-              color: Colors.grey.shade200, // Fallback background
+              color: containerSurface,
               child: FlutterMap(
                 options: MapOptions(
                   initialCenter: LatLng(_community!.lat, _community!.lng),
                   initialZoom: 14.0,
                   interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.none, // Static display map
+                    flags: InteractiveFlag.none,
                   ),
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: isDark
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: isDark ? const ['a', 'b', 'c', 'd'] : const [],
                     userAgentPackageName: 'com.example.mudda_frontend',
                   ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
                         point: LatLng(_community!.lat, _community!.lng),
-                        color: civicIndigo.withValues(alpha: 0.2),
-                        borderColor: civicIndigo,
+                        color: civicIndigo.withValues(alpha: 0.15),
+                        borderColor: civicIndigo.withValues(alpha: 0.6),
                         borderStrokeWidth: 2,
                         useRadiusInMeter: true,
-                        radius: _community!.radiusKm * 1000, // convert km to meters
+                        radius: _community!.radiusKm * 1000,
                       ),
                     ],
                   ),
@@ -111,7 +123,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             ),
           ),
 
-          // Title & Pulse Stats
+          // ────────────────────────────────────────────────
+          // 2. Title & Pulse Stats
+          // ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -120,31 +134,41 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                 children: [
                   Text(
                     _community!.name,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: theme.textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _community!.description,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 24),
 
-                  // Neighborhood Pulse Stats (Paper-on-stone style)
+                  // Neighborhood Pulse Stats
                   Row(
                     children: [
-                      Expanded(child: _buildStatCard("Active Members", "${_community!.memberCount}", surfaceContainerLow)),
+                      Expanded(child: _buildStatCard(
+                        "Active Members",
+                        "${_community!.memberCount}",
+                        containerSurface,
+                        civicIndigo,
+                        cs,
+                      )),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildStatCard("Issues Resolved", "128", surfaceContainerLow)),
+                      Expanded(child: _buildStatCard(
+                        "Issues Resolved",
+                        "128",
+                        containerSurface,
+                        civicIndigo,
+                        cs,
+                      )),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildStatCard("Trust Score", "92%", surfaceContainerLow)),
+                      Expanded(child: _buildStatCard(
+                        "Trust Score",
+                        "92%",
+                        containerSurface,
+                        civicIndigo,
+                        cs,
+                      )),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -153,7 +177,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             ),
           ),
 
-          // Official Announcements
+          // ────────────────────────────────────────────────
+          // 3. Official Announcements
+          // ────────────────────────────────────────────────
           if (_announcements.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -161,21 +187,20 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "City Hall Updates",
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: theme.textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 16),
                     ..._announcements.map((a) => Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFF4FF), // surface_container_low
+                            color: containerSurface,
                             borderRadius: BorderRadius.circular(16),
+                            border: isDark
+                                ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.3))
+                                : null,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,14 +209,21 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                                 children: [
                                   Icon(Icons.campaign, color: civicIndigo, size: 20),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    a.title,
-                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  Expanded(
+                                    child: Text(
+                                      a.title,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(a.content, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                              Text(
+                                a.content,
+                                style: theme.textTheme.bodyMedium,
+                              ),
                             ],
                           ),
                         )),
@@ -201,7 +233,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               ),
             ),
 
-          // Community Initiatives & Events
+          // ────────────────────────────────────────────────
+          // 4. Community Initiatives & Events
+          // ────────────────────────────────────────────────
           if (_initiatives.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -209,13 +243,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Community Initiatives & Events",
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: theme.textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -234,15 +264,20 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                             child: Container(
                               width: 280,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: cardSurface,
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  )
-                                ],
+                                border: isDark
+                                    ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.3))
+                                    : null,
+                                boxShadow: isDark
+                                    ? null
+                                    : const [
+                                        BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 10,
+                                          offset: Offset(0, 4),
+                                        )
+                                      ],
                               ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,8 +293,8 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                                       errorBuilder: (context, error, stackTrace) {
                                         return Container(
                                           height: 100,
-                                          color: Colors.grey.shade300,
-                                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                                          color: containerSurface,
+                                          child: Icon(Icons.broken_image, color: cs.onSurfaceVariant),
                                         );
                                       },
                                     ),
@@ -271,14 +306,25 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(i.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16), maxLines: 1),
+                                      Text(
+                                        i.title,
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                        maxLines: 1,
+                                      ),
                                       const SizedBox(height: 4),
                                       if (i.locationStr != null)
                                         Row(
                                           children: [
-                                            const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                            Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
                                             const SizedBox(width: 4),
-                                            Text(i.locationStr!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                            Text(
+                                              i.locationStr!,
+                                              style: theme.textTheme.labelMedium?.copyWith(
+                                                color: cs.onSurfaceVariant,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       const SizedBox(height: 8),
@@ -321,31 +367,37 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color bgColor) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    Color bgColor,
+    Color accentColor,
+    ColorScheme cs,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF4FF), // surface_container_low
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF4F46E5), // civicIndigo
+              color: accentColor,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF464555), // on_surface_variant
+              color: cs.onSurfaceVariant,
             ),
           )
         ],

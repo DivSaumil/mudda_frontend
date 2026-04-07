@@ -13,14 +13,34 @@ class InitiativeDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final isEvent = initiative.type == 'event';
-    final civicIndigo = const Color(0xFF4F46E5);
+
+    // Adaptive civic indigo — brighter in dark mode
+    final civicIndigo = isDark
+        ? const Color(0xFF818CF8) // indigo-400
+        : const Color(0xFF4F46E5); // indigo-600
+
+    // Adaptive surfaces
+    final cardSurface = isDark ? cs.surface : Colors.white;
+    final containerSurface = cs.surfaceContainerHighest;
+
+    // Adaptive green for funding
+    final fundingGreen = isDark
+        ? const Color(0xFF4ADE80) // green-400
+        : const Color(0xFF15803D); // green-700
+    final progressBarColor = isDark
+        ? const Color(0xFF22C55E) // green-500
+        : const Color(0xFF16A34A); // green-600
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
+          // ────────────────────────────────────────────────
           // Hero Image AppBar
+          // ────────────────────────────────────────────────
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
@@ -33,7 +53,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                           Container(color: civicIndigo.withValues(alpha: 0.2)),
                     )
                   : Container(
-                      color: civicIndigo.withValues(alpha: 0.1),
+                      color: civicIndigo.withValues(alpha: isDark ? 0.15 : 0.1),
                       child: Icon(
                         isEvent ? Icons.event : Icons.volunteer_activism,
                         size: 80,
@@ -45,6 +65,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Plus Jakarta Sans',
+                  color: Colors.white,
                   shadows: [
                     Shadow(
                       offset: Offset(0, 1),
@@ -57,41 +78,29 @@ class InitiativeDetailScreen extends StatelessWidget {
               centerTitle: false,
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
             ),
-            backgroundColor: civicIndigo,
+            backgroundColor: isDark ? cs.surface : civicIndigo,
             foregroundColor: Colors.white,
           ),
 
+          // ────────────────────────────────────────────────
           // Content
+          // ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badges (Type & Status)
+                  // ── Badges (Type & Status) ──
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isEvent ? Colors.orange.shade100 : Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          isEvent ? "Community Event" : "Fundraiser",
-                          style: TextStyle(
-                            color: isEvent ? Colors.orange.shade900 : Colors.green.shade900,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                      _buildTypeBadge(isEvent, isDark),
                       const Spacer(),
                       if (initiative.hasUserRsvp || initiative.hasUserPledged)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: civicIndigo.withValues(alpha: 0.1),
+                            color: civicIndigo.withValues(alpha: isDark ? 0.25 : 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -107,7 +116,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Date & Location Info Row
+                  // ── Date & Location Info Row ──
                   Row(
                     children: [
                       // Date Box
@@ -115,7 +124,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF4FF), // surface_container_low
+                          color: containerSurface,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -126,7 +135,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: cs.onSurfaceVariant,
                               ),
                             ),
                             Text(
@@ -148,11 +157,11 @@ class InitiativeDetailScreen extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.access_time, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                                Icon(Icons.access_time, size: 16, color: cs.onSurfaceVariant),
                                 const SizedBox(width: 6),
                                 Text(
                                   DateFormat('EEEE, h:mm a').format(initiative.date),
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                  style: theme.textTheme.titleSmall,
                                 ),
                               ],
                             ),
@@ -161,12 +170,12 @@ class InitiativeDetailScreen extends StatelessWidget {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.location_on, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                                  Icon(Icons.location_on, size: 16, color: cs.onSurfaceVariant),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       initiative.locationStr!,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                      style: theme.textTheme.titleSmall,
                                     ),
                                   ),
                                 ],
@@ -179,26 +188,26 @@ class InitiativeDetailScreen extends StatelessWidget {
 
                   const SizedBox(height: 32),
 
-                  // Target/Goal Progress Section
+                  // ── Fundraiser: Funding Progress ──
                   if (!isEvent && initiative.goalAmount != null && initiative.raisedAmount != null) ...[
-                    const Text(
+                    Text(
                       "Funding Progress",
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: cardSurface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
-                        ],
+                        border: Border.all(color: isDark
+                            ? cs.outlineVariant.withValues(alpha: 0.3)
+                            : theme.dividerColor),
+                        boxShadow: isDark
+                            ? null
+                            : const [
+                                BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+                              ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,12 +221,15 @@ class InitiativeDetailScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.green.shade700,
+                                  color: fundingGreen,
                                 ),
                               ),
                               Text(
                                 "raised of \$${initiative.goalAmount!.toStringAsFixed(0)}",
-                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -227,43 +239,49 @@ class InitiativeDetailScreen extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: initiative.raisedAmount! / initiative.goalAmount!,
                               minHeight: 12,
-                              backgroundColor: Colors.grey.shade200,
-                              color: Colors.green.shade600,
+                              backgroundColor: isDark
+                                  ? cs.surfaceContainerHighest
+                                  : Colors.grey.shade200,
+                              color: progressBarColor,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             "${((initiative.raisedAmount! / initiative.goalAmount!) * 100).toStringAsFixed(0)}% funded",
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
                   ] else ...[
-                    // RSVP Stats for Events
-                    const Text(
+                    // ── Event: Community Interest / RSVP Stats ──
+                    Text(
                       "Community Interest",
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF4FF),
+                        color: containerSurface,
                         borderRadius: BorderRadius.circular(16),
+                        border: isDark
+                            ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.3))
+                            : null,
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: cardSurface,
                               shape: BoxShape.circle,
+                              border: isDark
+                                  ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2))
+                                  : null,
                             ),
                             child: Icon(Icons.people, color: civicIndigo),
                           ),
@@ -282,11 +300,7 @@ class InitiativeDetailScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 "Join them today!",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                                style: theme.textTheme.bodyMedium,
                               ),
                             ],
                           ),
@@ -296,23 +310,15 @@ class InitiativeDetailScreen extends StatelessWidget {
                     const SizedBox(height: 32),
                   ],
 
-                  // Description
-                  const Text(
+                  // ── Description ──
+                  Text(
                     "About This Initiative",
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: theme.textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     initiative.description,
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
-                      color: theme.colorScheme.onSurface,
-                    ),
+                    style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 100), // padding for bottom action bar
                 ],
@@ -322,16 +328,21 @@ class InitiativeDetailScreen extends StatelessWidget {
         ],
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 32), // Add bottom safe area manually or rely on SafeArea
+        padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 32),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -4),
-            ),
-          ],
+          color: theme.scaffoldBackgroundColor,
+          border: isDark
+              ? Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)))
+              : null,
+          boxShadow: isDark
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, -4),
+                  ),
+                ],
         ),
         child: SafeArea(
           child: SizedBox(
@@ -362,6 +373,31 @@ class InitiativeDetailScreen extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeBadge(bool isEvent, bool isDark) {
+    final Color badgeColor = isEvent
+        ? const Color(0xFFF97316) // orange-500
+        : const Color(0xFF22C55E); // green-500
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: isDark ? 0.2 : 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: isDark
+            ? Border.all(color: badgeColor.withValues(alpha: 0.3))
+            : null,
+      ),
+      child: Text(
+        isEvent ? "Community Event" : "Fundraiser",
+        style: TextStyle(
+          color: isDark ? badgeColor : (isEvent ? const Color(0xFF9A3412) : const Color(0xFF166534)),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
         ),
       ),
     );
