@@ -14,6 +14,9 @@ import 'package:mudda_frontend/features/issues/application/category_notifier.dar
 import 'package:mudda_frontend/features/issues/presentation/screens/location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+const bool _isDemoMode = true;
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 
@@ -52,6 +55,10 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
   String _locationSubLabel = 'Tap Edit to choose on map';
   final List<XFile> _selectedImages = [];
 
+  // Dictation State
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  bool _speechEnabled = false;
+  bool _isListening = false;
 
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
@@ -64,6 +71,46 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
       duration: const Duration(milliseconds: 420),
     )..forward();
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    if (_isDemoMode) {
+      _initSpeech();
+    }
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    if (mounted) setState(() {});
+  }
+
+  void _listen() async {
+    if (!_speechEnabled) {
+      _initSpeech();
+    }
+    
+    if (_isListening) {
+      _speechToText.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    setState(() => _isListening = true);
+    await _speechToText.listen(
+      onResult: (result) {
+        setState(() {
+          _descriptionController.text = result.recognizedWords;
+          if (_titleController.text.isEmpty && result.recognizedWords.isNotEmpty) {
+            List<String> words = result.recognizedWords.split(' ');
+            if (words.length > 5) {
+               _titleController.text = words.sublist(0, 5).join(' ');
+            } else {
+               _titleController.text = result.recognizedWords;
+            }
+          }
+        });
+        if (result.finalResult) {
+          setState(() => _isListening = false);
+        }
+      },
+    );
   }
 
   @override
@@ -235,6 +282,14 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
               // ── Header ────────────────────────────────────────────────
               SliverToBoxAdapter(child: _buildHeader()),
 
+              if (_isDemoMode)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: _buildDictationCard(),
+                  ),
+                ),
+
               // ── Evidence & Media ──────────────────────────────────────
               SliverToBoxAdapter(
                 child: _buildSection(
@@ -338,6 +393,87 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDictationCard() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _isListening ? _C.primary.withValues(alpha: 0.1) : _C.surfaceLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isListening ? _C.primary.withValues(alpha: 0.5) : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _isListening
+                    ? [const Color(0xFFEF4444), const Color(0xFFB91C1C)]
+                    : [const Color(0xFF3525CD), const Color(0xFF4F46E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: _listen,
+                child: Icon(
+                  _isListening ? Icons.mic_off_rounded : Icons.mic_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isListening ? 'Listening...' : 'Dictate with AI',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _C.inkBlack,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _isListening
+                      ? 'Speak your issue clearly'
+                      : 'Tap to auto-fill details',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: _C.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_isListening)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: _C.primary,
+              ),
+            )
         ],
       ),
     );

@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need speech recognition to allow dictating civic issues.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access to record audio for dictation.</string>
 </dict>
 </plist>
