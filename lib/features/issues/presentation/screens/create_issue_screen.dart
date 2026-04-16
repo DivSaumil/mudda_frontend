@@ -15,6 +15,16 @@ import 'package:mudda_frontend/features/issues/presentation/screens/location_pic
 import 'package:geocoding/geocoding.dart';
 import 'package:mudda_frontend/shared/utils/snackbar_util.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+
+enum DictationState {
+  idle,
+  askingProblem,
+  listeningProblem,
+  askingTitle,
+  listeningTitle,
+  confirming
+}
 
 const bool _isDemoMode = true;
 
@@ -57,8 +67,10 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
 
   // Dictation State
   final stt.SpeechToText _speechToText = stt.SpeechToText();
+  final FlutterTts _flutterTts = FlutterTts();
   bool _speechEnabled = false;
-  bool _isListening = false;
+  DictationState _dictationState = DictationState.idle;
+  bool get _isListening => _dictationState != DictationState.idle;
 
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
@@ -73,48 +85,135 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     if (_isDemoMode) {
       _initSpeech();
+      _initTts();
     }
   }
 
-  void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
+  void _initTts() async {
+    await _flutterTts.setLanguage("hi-IN");
+    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setVolume(1.0);
+    await _flutterTts.setPitch(1.0);
+    await _flutterTts.awaitSpeakCompletion(true);
+  }
+
+  Future<void> _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize(
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          if (_dictationState == DictationState.listeningProblem) {
+            _askForTitle();
+          } else if (_dictationState == DictationState.listeningTitle) {
+            _finalizeDictation();
+          }
+        }
+      },
+    );
     if (mounted) setState(() {});
   }
 
   void _listen() async {
-    if (!_speechEnabled) {
-      _initSpeech();
-    }
+    if (!_speechEnabled) await _initSpeech();
     
-    if (_isListening) {
-      _speechToText.stop();
-      setState(() => _isListening = false);
+    if (_dictationState != DictationState.idle) {
+      await _flutterTts.stop();
+      await _speechToText.stop();
+      setState(() => _dictationState = DictationState.idle);
       return;
     }
 
-    setState(() => _isListening = true);
+    setState(() => _dictationState = DictationState.askingProblem);
+    await _flutterTts.speak("कृपया अपनी समस्या बताएं।");
+    _listenForProblem();
+  }
+
+  void _listenForProblem() async {
+    if (!mounted) return;
+    setState(() => _dictationState = DictationState.listeningProblem);
     await _speechToText.listen(
+      localeId: 'hi_IN',
       onResult: (result) {
+        if (!mounted) return;
         setState(() {
           _descriptionController.text = result.recognizedWords;
-          if (_titleController.text.isEmpty && result.recognizedWords.isNotEmpty) {
-            List<String> words = result.recognizedWords.split(' ');
-            if (words.length > 5) {
-               _titleController.text = words.sublist(0, 5).join(' ');
-            } else {
-               _titleController.text = result.recognizedWords;
-            }
-          }
         });
-        if (result.finalResult) {
-          setState(() => _isListening = false);
+        if (result.finalResult && _dictationState == DictationState.listeningProblem) {
+          _askForTitle();
         }
       },
+      listenFor: const Duration(seconds: 60),
+      pauseFor: const Duration(seconds: 8),
+      listenOptions: stt.SpeechListenOptions(cancelOnError: true),
     );
+  }
+
+  Future<void> _askForTitle() async {
+    if (_dictationState != DictationState.listeningProblem) return;
+    await _speechToText.stop();
+    if (!mounted) return;
+    setState(() => _dictationState = DictationState.askingTitle);
+    await _flutterTts.speak("समस्या का शीर्षक क्या होना चाहिए?");
+    _listenForTitle();
+  }
+
+  void _listenForTitle() async {
+    if (!mounted) return;
+    setState(() => _dictationState = DictationState.listeningTitle);
+    await _speechToText.listen(
+      localeId: 'hi_IN',
+      onResult: (result) {
+        if (!mounted) return;
+        setState(() {
+          _titleController.text = result.recognizedWords;
+        });
+        if (result.finalResult && _dictationState == DictationState.listeningTitle) {
+          _finalizeDictation();
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 8),
+      listenOptions: stt.SpeechListenOptions(cancelOnError: true),
+    );
+  }
+
+  Future<void> _finalizeDictation() async {
+    if (_dictationState != DictationState.listeningTitle) return;
+    await _speechToText.stop();
+
+    if (!mounted) return;
+    
+    // Auto select first category
+    final categoriesAsync = ref.read(categoryNotifierProvider);
+    categoriesAsync.whenData((categories) {
+      if (categories.isNotEmpty) {
+        setState(() => _selectedCategory = categories.first);
+      }
+    });
+
+    // Auto pick location
+    setState(() {
+      _selectedLocation = const LatLng(19.0760, 72.8777);
+      _locationLabel = "19.0760, 72.8777";
+      _locationSubLabel = "Auto-selected via AI";
+    });
+
+    setState(() => _dictationState = DictationState.confirming);
+    await _flutterTts.setSpeechRate(0.55);
+    
+    String spokenText = "मैंने आपकी समस्या दर्ज कर ली है। शीर्षक है ${_titleController.text}। "
+        "विवरण है ${_descriptionController.text}। "
+        "श्रेणी है ${_selectedCategory?.name ?? 'चयनित'}। "
+        "स्थान पिन कर दिया गया है। पुष्टि के लिए कृपया नीला बटन दबाएं।";
+
+    await _flutterTts.speak(spokenText);
+    if (!mounted) return;
+    setState(() => _dictationState = DictationState.idle);
   }
 
   @override
   void dispose() {
+    _flutterTts.stop();
+    _speechToText.stop();
     _titleController.dispose();
     _descriptionController.dispose();
     _scrollController.dispose();
