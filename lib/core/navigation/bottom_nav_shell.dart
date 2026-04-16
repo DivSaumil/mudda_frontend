@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mudda_frontend/features/auth/application/auth_notifier.dart';
@@ -50,7 +51,18 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
 
+    // Make the system navigation bar transparent so our app colours show
+    // through, but keep its buttons visible. The SafeArea on the body
+    // ensures no content is ever obscured by the 3-button nav bar.
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+    );
+
     return Scaffold(
+      extendBody: true, // body draws behind the transparent nav bar …
       key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Mudda'),
@@ -74,7 +86,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
         ],
       ),
       drawer: _buildDrawer(context),
-      body: widget.child,
+      // … but SafeArea ensures the child's content stops above it.
+      body: SafeArea(
+        top: false,   // AppBar already handles the top inset
+        bottom: true, // Push content above the system nav bar
+        child: widget.child,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
