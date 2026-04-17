@@ -29,9 +29,15 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
 
   Future<void> _loadData() async {
     final comm = await _repo.getHub();
+    if (!mounted) return; // widget may have been disposed while awaiting
+
     if (comm != null) {
       final inits = await _repo.getInitiatives(comm.id);
+      if (!mounted) return; // guard again after second await
+
       final ann = await _repo.getAnnouncements(comm.id);
+      if (!mounted) return; // guard after third await
+
       setState(() {
         _community = comm;
         _initiatives = inits;
@@ -44,6 +50,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

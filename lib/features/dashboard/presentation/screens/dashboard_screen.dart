@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mudda_frontend/features/issues/presentation/screens/create_issue_screen.dart';
+import 'package:mudda_frontend/shared/theme/app_colors.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -10,25 +12,24 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
-  // Initial center (Gurugram coordinates example)
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
+  // Initial center (Gurugram coordinates)
   final LatLng _initialCenter = const LatLng(28.4595, 77.0266);
   double _currentZoom = 13.0;
   final MapController _mapController = MapController();
 
-  // Mock Data for Analytics
+  // Mock analytics data
   final int _totalIssues = 1240;
   final int _solvedIssues = 892;
 
-  // Mock Data for Categories
   final List<Map<String, dynamic>> _categoryStats = [
-    {'label': 'Potholes', 'count': 450, 'color': Colors.orange},
-    {'label': 'Garbage', 'count': 320, 'color': Colors.brown},
-    {'label': 'Lighting', 'count': 210, 'color': Colors.yellow.shade700},
-    {'label': 'Water', 'count': 150, 'color': Colors.blue},
+    {'label': 'Potholes', 'count': 450, 'color': const Color(0xFFF59E0B)},
+    {'label': 'Garbage', 'count': 320, 'color': const Color(0xFF8B5CF6)},
+    {'label': 'Lighting', 'count': 210, 'color': const Color(0xFF3B82F6)},
+    {'label': 'Water', 'count': 150, 'color': const Color(0xFF10B981)},
   ];
 
-  // Mock Data for Map Markers
   final List<MapIssueData> _areaIssues = [
     MapIssueData(
       position: const LatLng(28.4620, 77.0280),
@@ -88,547 +89,783 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Width calculation to ensure a peek of the next card
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double cardWidth =
-        screenWidth - 40; // Leaves 20px padding on each side roughly
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth - 40;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text(
-          "City Dashboard",
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filters
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackgroundDark
+          : AppColors.scaffoldBackground,
+      body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            // 1. Swipable Flashcards Section (ListView with Snapping)
-            SizedBox(
-              height: 240,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                physics:
-                    const PageScrollPhysics(), // Enables the snapping effect
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                ), // Padding for the list start/end
-                children: [
-                  // Card 1: Resolution Rate
-                  Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(
-                      right: 12,
-                    ), // Space between cards
-                    child: _buildAnalyticsCard(child: _buildResolutionRate()),
-                  ),
+        slivers: [
+          // ── Gradient Header ──────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _buildGradientHeader(isDark),
+          ),
 
-                  // Card 2: Top Issues
-                  Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: _buildAnalyticsCard(child: _buildTopCategories()),
-                  ),
-
-                  // Card 3: Quick Stats
-                  Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(
-                      right: 4,
-                    ), // Last item needs less margin
-                    child: _buildAnalyticsCard(
-                      color: Colors.blue.shade600,
-                      child: _buildQuickStat(
-                        "Avg Response",
-                        "24 hrs",
-                        Icons.timer,
-                        textColor: Colors.white,
-                        subtextColor: Colors.white70,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. "Raise Your Voice" Call to Action
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.redAccent.shade200,
-                      Colors.redAccent.shade400,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.redAccent.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _navigateToCreateIssue,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 20,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.campaign_outlined,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Spot an issue?",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                "Raise your voice now",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // 3. Section Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.map_outlined,
-                    size: 20,
-                    color: Colors.blueGrey,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "Live Issue Map",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _recenter,
-                    child: Text(
-                      "Recenter",
-                      style: TextStyle(
-                        color: Colors.blue.shade600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 4. Map Section (Fixed Height)
-            Container(
-              height: 450, // Fixed generous height
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
+          // ── Analytics Flashcards ──────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 20, bottom: 4),
+              child: SizedBox(
+                height: 200,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const PageScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: _initialCenter,
-                        initialZoom: _currentZoom,
-                        // Prevent map from intercepting page scroll unless interacting
-                        interactionOptions: const InteractionOptions(
-                          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                        ),
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.example.mudda_frontend',
-                        ),
-                        MarkerLayer(
-                          markers: _areaIssues.map((issue) {
-                            return Marker(
-                              point: issue.position,
-                              width: 60,
-                              height: 60,
-                              child: GestureDetector(
-                                onTap: () => _showAreaDetails(context, issue),
-                                child: _buildAnimatedMarker(
-                                  issue.totalIssues,
-                                  issue.severity,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                    Container(
+                      width: cardWidth,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: _buildResolutionCard(isDark),
                     ),
-                    // Zoom Controls
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      child: Column(
-                        children: [
-                          _buildMapControlBtn(Icons.add, _zoomIn),
-                          const SizedBox(height: 8),
-                          _buildMapControlBtn(Icons.remove, _zoomOut),
-                        ],
-                      ),
+                    Container(
+                      width: cardWidth,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: _buildTopCategoriesCard(isDark),
+                    ),
+                    Container(
+                      width: cardWidth,
+                      margin: const EdgeInsets.only(right: 4),
+                      child: _buildResponseTimeCard(isDark),
                     ),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          // ── Slide dots indicator ─────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Center(
+              child: _buildSlideIndicator(isDark),
+            ),
+          ),
+
+          // ── CTA Banner ───────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: _buildCtaBanner(isDark),
+            ),
+          ),
+
+          // ── Live Map section header ───────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+              child: _buildSectionHeader('Live Issue Map', isDark),
+            ),
+          ),
+
+          // ── Map ──────────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _buildMap(isDark),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
       ),
     );
   }
 
-  // --- Widget Builders ---
+  // ─── Header ─────────────────────────────────────────────────────────────
 
-  Widget _buildAnalyticsCard({
+  Widget _buildGradientHeader(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? AppColors.headerGradientDark
+            : AppColors.primaryGradient,
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        bottom: 28,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bar_chart_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'City Dashboard',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const Spacer(),
+              Material(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {},
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.tune_rounded,
+                        color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Gurugram, Haryana',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'City Health Overview',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Quick stat row
+          Row(
+            children: [
+              _headerStat('$_totalIssues', 'Total Issues'),
+              const SizedBox(width: 20),
+              _headerStat('$_solvedIssues', 'Resolved'),
+              const SizedBox(width: 20),
+              _headerStat(
+                  '${((_solvedIssues / _totalIssues) * 100).toInt()}%',
+                  'Rate'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerStat(String value, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withValues(alpha: 0.65),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Analytics Cards ─────────────────────────────────────────────────────
+
+  Widget _buildResolutionCard(bool isDark) {
+    final pct = _solvedIssues / _totalIssues;
+    return _analyticsCard(
+      isDark: isDark,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Resolution Rate',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ShaderMask(
+                  shaderCallback: (b) =>
+                      AppColors.successGradient.createShader(b),
+                  child: Text(
+                    '${(pct * 100).toInt()}%',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$_solvedIssues issues resolved',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Center(
+              child: SizedBox(
+                height: 88,
+                width: 88,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: 1,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : const Color(0xFFE2E8F0),
+                      strokeWidth: 10,
+                    ),
+                    CircularProgressIndicator(
+                      value: pct,
+                      strokeWidth: 10,
+                      strokeCap: StrokeCap.round,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(AppColors.accent),
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${(pct * 100).toInt()}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          Text(
+                            '%',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopCategoriesCard(bool isDark) {
+    return _analyticsCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Top Issues',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              Text(
+                'Total: $_totalIssues',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: isDark
+                      ? AppColors.textSecondaryDark.withValues(alpha: 0.5)
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: _categoryStats.take(3).map((cat) {
+                final pct = (cat['count'] as int) / 500.0;
+                final color = cat['color'] as Color;
+                return Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        cat['label'],
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: pct,
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : AppColors.border,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${cat['count']}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResponseTimeCard(bool isDark) {
+    return _analyticsCard(
+      isDark: isDark,
+      gradient: AppColors.infoGradient,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.timer_rounded, color: Colors.white, size: 22),
+          ),
+          const Spacer(),
+          Text(
+            '24 hrs',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: -1,
+            ),
+          ),
+          Text(
+            'Avg Response Time',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.trending_down_rounded,
+                  color: Colors.white, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                '8% faster this month',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _analyticsCard({
+    required bool isDark,
     required Widget child,
-    Color color = Colors.white,
+    Gradient? gradient,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color,
+        gradient: gradient,
+        color: gradient == null
+            ? (isDark ? AppColors.surfaceDark : AppColors.surface)
+            : null,
         borderRadius: BorderRadius.circular(20),
+        border: gradient == null
+            ? Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 0.8)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 12,
+            color: gradient != null
+                ? AppColors.info.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 16,
             offset: const Offset(0, 6),
           ),
         ],
-        border: color == Colors.white
-            ? Border.all(color: Colors.grey.shade200)
-            : null,
       ),
       child: child,
     );
   }
 
-  Widget _buildResolutionRate() {
-    double percentage = _solvedIssues / _totalIssues;
-    return Row(
-      children: [
-        Expanded(
-          flex: 4,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "Resolution Rate",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "${(percentage * 100).toInt()}%",
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "$_solvedIssues Issues Solved",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+  Widget _buildSlideIndicator(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          3,
+          (i) => AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: i == 0 ? 16 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              color: i == 0
+                  ? AppColors.primary
+                  : (isDark
+                      ? AppColors.textSecondaryDark.withValues(alpha: 0.3)
+                      : AppColors.textSecondary.withValues(alpha: 0.2)),
+            ),
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: Center(
-            child: SizedBox(
-              height: 80,
-              width: 80,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CircularProgressIndicator(
-                    value: 1,
-                    color: Colors.grey.shade100,
-                    strokeWidth: 10,
+      ),
+    );
+  }
+
+  // ─── CTA Banner ──────────────────────────────────────────────────────────
+
+  Widget _buildCtaBanner(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.ctaGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _navigateToCreateIssue,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  CircularProgressIndicator(
-                    value: percentage,
-                    color: Colors.greenAccent.shade700,
-                    strokeWidth: 10,
-                    strokeCap: StrokeCap.round,
+                  child: const Icon(
+                    Icons.campaign_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spot an issue?',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      Text(
+                        'Raise your voice — make it count',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 16),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Section Header ───────────────────────────────────────────────────────
+
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 20,
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: _recenter,
+          icon: Icon(Icons.my_location_rounded,
+              size: 14, color: AppColors.primary),
+          label: Text(
+            'Recenter',
+            style: GoogleFonts.plusJakartaSans(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTopCategories() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // ─── Map ─────────────────────────────────────────────────────────────────
+
+  Widget _buildMap(bool isDark) {
+    return Container(
+      height: 440,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
           children: [
-            const Text(
-              "Top Issues",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _initialCenter,
+                initialZoom: _currentZoom,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
               ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.mudda_frontend',
+                ),
+                MarkerLayer(
+                  markers: _areaIssues.map((issue) {
+                    return Marker(
+                      point: issue.position,
+                      width: 60,
+                      height: 60,
+                      child: GestureDetector(
+                        onTap: () => _showAreaDetails(context, issue),
+                        child: _buildMarker(issue),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
-            Text(
-              "Total: $_totalIssues",
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+            // Zoom Controls
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Column(
+                children: [
+                  _buildMapControlBtn(Icons.add_rounded, _zoomIn),
+                  const SizedBox(height: 6),
+                  _buildMapControlBtn(Icons.remove_rounded, _zoomOut),
+                ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _categoryStats.take(3).map((cat) {
-              double percent = cat['count'] / 500; // Mock max base
-              return Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: (cat['color'] as Color).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.circle, size: 12, color: cat['color']),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      cat['label'],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: percent,
-                        backgroundColor: Colors.grey.shade100,
-                        valueColor: AlwaysStoppedAnimation<Color>(cat['color']),
-                        minHeight: 8,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "${cat['count']}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickStat(
-    String title,
-    String value,
-    IconData icon, {
-    Color textColor = Colors.black,
-    Color subtextColor = Colors.grey,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: textColor, size: 24),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: subtextColor,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildMapControlBtn(IconData icon, VoidCallback onTap) {
     return Material(
       color: Colors.white,
-      elevation: 4,
+      elevation: 3,
       borderRadius: BorderRadius.circular(12),
+      shadowColor: Colors.black.withValues(alpha: 0.15),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           alignment: Alignment.center,
-          child: Icon(icon, color: Colors.black87),
+          child: Icon(icon, color: AppColors.textPrimary, size: 20),
         ),
       ),
     );
   }
 
-  Widget _buildAnimatedMarker(int count, String severity) {
+  Widget _buildMarker(MapIssueData issue) {
     Color color;
-    switch (severity) {
+    LinearGradient grad;
+    switch (issue.severity) {
       case 'High':
-        color = Colors.redAccent;
+        color = AppColors.error;
+        grad = const LinearGradient(
+            colors: [Color(0xFFEF4444), Color(0xFFDC2626)]);
         break;
       case 'Medium':
-        color = Colors.orangeAccent;
+        color = AppColors.warning;
+        grad = const LinearGradient(
+            colors: [Color(0xFFF59E0B), Color(0xFFD97706)]);
         break;
       default:
-        color = Colors.green;
+        color = AppColors.success;
+        grad = const LinearGradient(
+            colors: [Color(0xFF10B981), Color(0xFF059669)]);
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.9),
+        gradient: grad,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: Colors.white, width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 8,
+            color: color.withValues(alpha: 0.45),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Center(
         child: Text(
-          "$count",
-          style: const TextStyle(
+          '${issue.totalIssues}',
+          style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
           ),
         ),
       ),
     );
   }
 
-  // --- Bottom Sheet Logic ---
+  // ─── Area Details Sheet ──────────────────────────────────────────────────
 
   void _showAreaDetails(BuildContext context, MapIssueData data) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -636,9 +873,16 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 0.8,
+              ),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -646,11 +890,11 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Center(
                 child: Container(
-                  width: 40,
+                  width: 36,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: isDark ? AppColors.borderDark : AppColors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -663,15 +907,22 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Text(
                         data.areaName,
-                        style: const TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        "Last updated: 2m ago",
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
+                        'Last updated: 2m ago',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -679,58 +930,51 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
+                        horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: _getSeverityColor(
-                        data.severity,
-                      ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      color:
+                          _getSeverityColor(data.severity).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _getSeverityColor(data.severity)
+                            .withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       data.severity.toUpperCase(),
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: _getSeverityColor(data.severity),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
                     child: _buildDetailBox(
-                      "Top Issue",
-                      data.topIssue,
-                      Icons.warning_amber,
-                      Colors.orange,
-                    ),
+                        isDark, 'Top Issue', data.topIssue,
+                        Icons.warning_amber_rounded, AppColors.warning),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildDetailBox(
-                      "Total",
-                      "${data.totalIssues}",
-                      Icons.assignment,
-                      Colors.blue,
-                    ),
+                        isDark, 'Total', '${data.totalIssues}',
+                        Icons.assignment_rounded, AppColors.info),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Optionally navigate to filtered list here
-                  },
+                  onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -738,7 +982,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text("View Detailed Report"),
+                  child: Text(
+                    'View Detailed Report',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -748,37 +998,40 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDetailBox(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildDetailBox(bool isDark, String label, String value,
+      IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark
+            ? color.withValues(alpha: 0.08)
+            : color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
+          Icon(icon, color: color, size: 22),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
             ),
+            overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -788,11 +1041,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Color _getSeverityColor(String severity) {
     switch (severity) {
       case 'High':
-        return Colors.redAccent;
+        return AppColors.error;
       case 'Medium':
-        return Colors.orangeAccent;
+        return AppColors.warning;
       default:
-        return Colors.green;
+        return AppColors.success;
     }
   }
 }
@@ -804,7 +1057,7 @@ class MapIssueData {
   final String topIssue;
   final String severity;
 
-  MapIssueData({
+  const MapIssueData({
     required this.position,
     required this.areaName,
     required this.totalIssues,

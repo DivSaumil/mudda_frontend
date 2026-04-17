@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/application/issue_list_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/widgets/issue_card.dart';
 import 'package:mudda_frontend/features/community/presentation/screens/community_hub_screen.dart';
+import 'package:mudda_frontend/shared/theme/app_colors.dart';
 
 class IssueFeedScreen extends ConsumerStatefulWidget {
   const IssueFeedScreen({super.key});
@@ -45,19 +47,25 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
     final issueState = ref.watch(issueListNotifierProvider);
     final categoriesAsync = ref.watch(categoryNotifierProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           toolbarHeight: 0,
-          bottom: const TabBar(
-            labelStyle: TextStyle(fontWeight: FontWeight.w800, fontFamily: 'Plus Jakarta Sans'),
-            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Plus Jakarta Sans'),
-            indicatorColor: Color(0xFF4F46E5), // Civic Indigo
-            tabs: [
+          backgroundColor: isDark ? AppColors.scaffoldBackgroundDark : AppColors.surface,
+          bottom: TabBar(
+            labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
+            labelColor: AppColors.primary,
+            unselectedLabelColor: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 3,
+            indicatorSize: TabBarIndicatorSize.label,
+            tabs: const [
               Tab(text: "Global"),
-              Tab(text: "Neighborhood"),
+              Tab(text: "Neighbourhood"),
             ],
           ),
         ),
@@ -68,9 +76,9 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
               children: [
           // Category Filter
           Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            color: Theme.of(context).cardColor,
+            height: 56,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: isDark ? AppColors.scaffoldBackgroundDark : AppColors.surface,
             child: categoriesAsync.when(
               loading: () => const Center(
                 child: SizedBox(
@@ -88,7 +96,6 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                 ),
               ),
               data: (categories) {
-                // Build chip list: "All" + backend categories
                 final chipItems = <_CategoryChipItem>[
                   const _CategoryChipItem(name: 'All', id: null),
                   ...categories.map(
@@ -109,27 +116,41 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                       orElse: () => chip.name == 'All',
                     );
 
-                    return ChoiceChip(
-                      label: Text(chip.name),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          ref
-                              .read(issueListNotifierProvider.notifier)
-                              .filterByCategory(chip.name, categoryId: chip.id);
-                        }
-                      },
-                      selectedColor: Theme.of(context).colorScheme.primary,
-                      backgroundColor: Theme.of(context).cardColor,
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : Theme.of(context).textTheme.bodyLarge?.color,
-                        fontWeight: FontWeight.w500,
+                    return GestureDetector(
+                      onTap: () => ref
+                          .read(issueListNotifierProvider.notifier)
+                          .filterByCategory(chip.name, categoryId: chip.id),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: isSelected ? AppColors.primaryGradient : null,
+                          color: isSelected
+                              ? null
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : AppColors.scaffoldBackground),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.transparent
+                                : (isDark ? AppColors.borderDark : AppColors.border),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          chip.name,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary),
+                          ),
+                        ),
                       ),
-                      side: isSelected
-                          ? BorderSide.none
-                          : BorderSide(color: Theme.of(context).dividerColor),
                     );
                   },
                 );
@@ -147,18 +168,31 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
                   horizontal: 16,
                   vertical: 10,
                 ),
-                color: Colors.amber.shade800,
-                child: const Row(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Icon(Icons.cloud_off, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.cloud_off_rounded, color: Colors.white, size: 14),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         "You're offline — showing cached issues",
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

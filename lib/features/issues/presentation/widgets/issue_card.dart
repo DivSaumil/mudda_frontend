@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mudda_frontend/api/models/issue_models.dart';
 import 'package:mudda_frontend/core/di/providers.dart';
+import 'package:mudda_frontend/shared/theme/app_colors.dart';
 
 class IssueCard extends ConsumerStatefulWidget {
   final IssueResponse issue;
@@ -14,19 +17,41 @@ class IssueCard extends ConsumerStatefulWidget {
 }
 
 class _IssueCardState extends ConsumerState<IssueCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isVoting = false;
   late int _localLikes;
   late bool _hasVoted;
+
+  // Micro-animation controllers
+  late AnimationController _voteCtrl;
+  late Animation<double> _voteScale;
+  late AnimationController _entryCtrl;
+  late Animation<double> _entryAnim;
 
   @override
   void initState() {
     super.initState();
     _localLikes = widget.issue.voteCount;
     _hasVoted = widget.issue.hasUserVoted ?? false;
+
+    // Vote bounce animation
+    _voteCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+    _voteScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.35), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.35, end: 1.0), weight: 60),
+    ]).animate(CurvedAnimation(parent: _voteCtrl, curve: Curves.easeOut));
+
+    // Entry slide-up animation
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..forward();
+    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
   }
 
-  // Update local state if the widget updates with new data
   @override
   void didUpdateWidget(IssueCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -36,75 +61,52 @@ class _IssueCardState extends ConsumerState<IssueCard>
     }
   }
 
+  @override
+  void dispose() {
+    _voteCtrl.dispose();
+    _entryCtrl.dispose();
+    super.dispose();
+  }
+
   String _formatTimeAgo(String dateString) {
     try {
       final date = DateTime.parse(dateString);
       final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inDays > 365) {
-        return '${(difference.inDays / 365).floor()}y ago';
-      } else if (difference.inDays > 30) {
-        return '${(difference.inDays / 30).floor()}mo ago';
-      } else if (difference.inDays > 0) {
-        return '${difference.inDays}d ago';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}h ago';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m ago';
-      } else {
-        return 'Just now';
-      }
-    } catch (e) {
+      final diff = now.difference(date);
+      if (diff.inDays > 365) return '${(diff.inDays / 365).floor()}y ago';
+      if (diff.inDays > 30) return '${(diff.inDays / 30).floor()}mo ago';
+      if (diff.inDays > 0) return '${diff.inDays}d ago';
+      if (diff.inHours > 0) return '${diff.inHours}h ago';
+      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+      return 'Just now';
+    } catch (_) {
       return 'Recently';
     }
   }
 
   Future<void> _handleVote() async {
     if (_isVoting) return;
-    setState(() => _isVoting = true);
+    HapticFeedback.lightImpact();
+    _voteCtrl.forward(from: 0);
+    setState(() {
+      _isVoting = true;
+      if (_hasVoted) {
+        _localLikes--;
+        _hasVoted = false;
+      } else {
+        _localLikes++;
+        _hasVoted = true;
+      }
+    });
 
     try {
-      // Optimistic update
-      setState(() {
-        if (_hasVoted) {
-          _localLikes--;
-          _hasVoted = false;
-        } else {
-          _localLikes++;
-          _hasVoted = true;
-        }
-      });
-
-      // Get vote repository from provider (Assuming one exists or using generic service)
-      // Note: In the original code it was VoteRepository.
-      // We haven't created a specific provider for VoteRepository yet in shared providers,
-      // but we can create one or access the service directly.
-      // For now, I'll access the API service or create a repository on the fly if needed
-      // But better: use the proper provider pattern.
-      // The user previous code had: final VoteRepository _voteRepository = VoteRepository(service: voteService);
-      // Let's assume we can get it via a provider we missed or create it here.
-      // Since we didn't add voteRepositoryProvider in the step before, let's fix that too or just use the service.
-      // Actually, checking providers.dart, we haven't added vote providers yet.
-      // I'll assume for now we can get the service and make the repo.
-
-      // TEMPORARY: Create repository instance here until we define the provider globally
-      // In a real scenario, I should go back and add the provider.
-      // Refactoring step: I will modify providers.dart next to add vote providers.
-      // For this file to compile, I will assume `voteRepositoryProvider` exists
-      // and I will add it to providers.dart in the next step.
-
-      final voteRepository = ref.read(
-        voteRepositoryProvider,
-      ); // Will fail until I add this
-
+      final voteRepository = ref.read(voteRepositoryProvider);
       if (_hasVoted) {
         await voteRepository.createVote(widget.issue.id);
       } else {
         await voteRepository.deleteVote(widget.issue.id);
       }
     } catch (e) {
-      // Revert on failure
       if (mounted) {
         setState(() {
           if (_hasVoted) {
@@ -115,9 +117,9 @@ class _IssueCardState extends ConsumerState<IssueCard>
             _hasVoted = true;
           }
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to vote: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to vote: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isVoting = false);
@@ -125,289 +127,420 @@ class _IssueCardState extends ConsumerState<IssueCard>
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'OPEN':
-        return Colors.orange;
-      case 'RESOLVED':
-        return Colors.teal;
-      case 'CLOSED':
-        return Colors.green;
-      case 'PENDING':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
+    return AppColors.getStatusColor(status);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = _getStatusColor(widget.issue.status);
 
-    return GestureDetector(
-      onTap: () => widget.onTap(widget.issue),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with User and Status
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.15),
-                    backgroundImage: widget.issue.authorImageUrl.isNotEmpty
-                        ? NetworkImage(widget.issue.authorImageUrl)
-                        : null,
-                    child: widget.issue.authorImageUrl.isEmpty
-                        ? Text(
-                            widget.issue.authorName.isNotEmpty
-                                ? widget.issue.authorName[0].toUpperCase()
-                                : 'U',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.issue.authorName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          _formatTimeAgo(widget.issue.createdAt),
-                          style: TextStyle(
-                            color: Theme.of(context).hintColor,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: statusColor.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          widget.issue.status.toUpperCase(),
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.06),
+        end: Offset.zero,
+      ).animate(_entryAnim),
+      child: FadeTransition(
+        opacity: _entryAnim,
+        child: GestureDetector(
+          onTap: () => widget.onTap(widget.issue),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.borderDark.withValues(alpha: 0.6)
+                    : AppColors.border.withValues(alpha: 0.5),
+                width: 0.8,
               ),
-            ),
-            // Community Context Badge (if applicable)
-            if (widget.issue.communityId != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.home_work_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Neighborhood Local',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-            if (widget.issue.communityId != null) const SizedBox(height: 12),
-
-            // Image
-            if (widget.issue.firstImageUrl != null)
-              Hero(
-                tag: 'post_image_${widget.issue.id}',
-                child: Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(widget.issue.firstImageUrl!),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.issue.title,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(height: 1.3),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (widget.issue.content.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.issue.content,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  
-                  // Official Response
-                  if (widget.issue.officialResponse != null && widget.issue.officialResponse!.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Official Response",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 12,
-                                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Header ─────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      _buildAvatar(isDark),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.issue.authorName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimary,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
+                            ),
+                            Text(
+                              _formatTimeAgo(widget.issue.createdAt),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildStatusBadge(statusColor),
+                    ],
+                  ),
+                ),
+
+                // ── Community badge ─────────────────────────────────────
+                if (widget.issue.communityId != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.home_work_rounded,
+                              size: 13, color: AppColors.primary),
+                          const SizedBox(width: 5),
                           Text(
-                            widget.issue.officialResponse!,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            'Neighbourhood Local',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ),
 
-                  // Actions
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // ── Issue Image ─────────────────────────────────────────
+                if (widget.issue.firstImageUrl != null)
+                  Hero(
+                    tag: 'post_image_${widget.issue.id}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.zero,
+                      child: Image.network(
+                        widget.issue.firstImageUrl!,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 140,
+                          color: isDark
+                              ? AppColors.surfaceElevatedDark
+                              : AppColors.scaffoldBackground,
+                          child: Center(
+                            child: Icon(Icons.image_not_supported_outlined,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // ── Content ─────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        widget.issue.title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimary,
+                          height: 1.3,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (widget.issue.content.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.issue.content,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+
+                      // ── Official Response ──────────────────────────
+                      if (widget.issue.officialResponse != null &&
+                          widget.issue.officialResponse!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _buildOfficialResponse(isDark),
+                      ],
+
+                      const SizedBox(height: 14),
+
+                      // ── Actions ────────────────────────────────────
                       Row(
                         children: [
+                          _buildVoteButton(isDark),
+                          const SizedBox(width: 20),
                           _buildActionButton(
-                            icon: _hasVoted
-                                ? Icons.pan_tool
-                                : Icons.pan_tool_outlined,
-                            label: '$_localLikes',
-                            color: _hasVoted
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).hintColor,
-                            onTap: _handleVote,
-                          ),
-                          const SizedBox(width: 24),
-                          _buildActionButton(
+                            isDark: isDark,
                             icon: Icons.chat_bubble_outline_rounded,
                             label: '${widget.issue.comments}',
                             onTap: () => widget.onTap(widget.issue),
                           ),
+                          const Spacer(),
+                          _buildShareButton(isDark),
                         ],
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.share_rounded,
-                          color: Theme.of(context).hintColor,
-                        ),
-                        onPressed: () {},
                       ),
                     ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(bool isDark) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        shape: BoxShape.circle,
+      ),
+      child: widget.issue.authorImageUrl.isNotEmpty
+          ? ClipOval(
+              child: Image.network(widget.issue.authorImageUrl,
+                  fit: BoxFit.cover))
+          : Center(
+              child: Text(
+                widget.issue.authorName.isNotEmpty
+                    ? widget.issue.authorName[0].toUpperCase()
+                    : 'U',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
               ),
             ),
-          ],
+    );
+  }
+
+  Widget _buildStatusBadge(Color statusColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            widget.issue.status.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+              color: statusColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfficialResponse(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: isDark ? 0.08 : 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified_rounded,
+                  size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Official Response',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.issue.officialResponse!,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoteButton(bool isDark) {
+    return GestureDetector(
+      onTap: _handleVote,
+      child: AnimatedBuilder(
+        animation: _voteScale,
+        builder: (_, child) =>
+            Transform.scale(scale: _voteScale.value, child: child),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            gradient: _hasVoted ? AppColors.primaryGradient : null,
+            color: _hasVoted
+                ? null
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : AppColors.scaffoldBackground),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _hasVoted
+                  ? Colors.transparent
+                  : (isDark ? AppColors.borderDark : AppColors.border),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _hasVoted ? Icons.pan_tool_rounded : Icons.pan_tool_outlined,
+                size: 16,
+                color: _hasVoted
+                    ? Colors.white
+                    : (isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$_localLikes',
+                style: GoogleFonts.plusJakartaSans(
+                  color: _hasVoted
+                      ? Colors.white
+                      : (isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildActionButton({
+    required bool isDark,
     required IconData icon,
     required String label,
-    Color? color,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 22, color: color ?? Theme.of(context).hintColor),
-          const SizedBox(width: 6),
+          Icon(
+            icon,
+            size: 18,
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 5),
           Text(
             label,
-            style: TextStyle(
-              color: color ?? Theme.of(context).hintColor,
+            style: GoogleFonts.plusJakartaSans(
+              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize: 13,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShareButton(bool isDark) {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.all(7),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : AppColors.scaffoldBackground,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border,
+            width: 0.8,
+          ),
+        ),
+        child: Icon(
+          Icons.share_outlined,
+          size: 16,
+          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+        ),
       ),
     );
   }
