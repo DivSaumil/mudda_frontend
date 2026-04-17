@@ -225,7 +225,11 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
 
   Future<void> _pickImages() async {
     final picker = ImagePicker();
-    final images = await picker.pickMultiImage();
+    final images = await picker.pickMultiImage(
+      imageQuality: 70,
+      maxWidth: 1080,
+      maxHeight: 1080,
+    );
     if (images.isNotEmpty) {
       setState(() => _selectedImages.addAll(images));
     }
@@ -233,7 +237,12 @@ class _CreateIssuePageState extends ConsumerState<CreateIssuePage>
 
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera);
+    final photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+      maxWidth: 1080,
+      maxHeight: 1080,
+    );
     if (photo != null) {
       setState(() => _selectedImages.add(photo));
     }

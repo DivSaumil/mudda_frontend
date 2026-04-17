@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/amazon_model.dart';
@@ -19,8 +20,14 @@ class AmazonImageService {
       });
 
       final response = await _dio.post('/amazon/images', data: formData);
+      
+      var data = response.data;
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+      
       return ImageUploadResponse.fromJson(
-        response.data as Map<String, dynamic>,
+        data as Map<String, dynamic>,
       );
     } catch (e) {
       throw Exception('Failed to upload image: $e');
@@ -46,8 +53,14 @@ class AmazonImageService {
       }
 
       final response = await _dio.post('/amazon/images/batch', data: formData);
+      
+      var data = response.data;
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+      
       return BatchImageUploadResponse.fromJson(
-        response.data as Map<String, dynamic>,
+        data as Map<String, dynamic>,
       );
     } catch (e) {
       throw Exception('Failed to upload images: $e');
