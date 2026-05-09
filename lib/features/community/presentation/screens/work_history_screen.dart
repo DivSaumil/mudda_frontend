@@ -198,7 +198,7 @@ class _HistoryTile extends StatelessWidget {
             color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
         boxShadow: isDark
             ? null
-            : [const BoxShadow(color: Colors.black08, blurRadius: 8, offset: Offset(0, 2))],
+            : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 6))],
       ),
       child: Row(
         children: [

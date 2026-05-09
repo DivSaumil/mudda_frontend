@@ -313,10 +313,10 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                       submittedAt: DateTime.now(),
                     );
                     await _repo.submitGrievance(g);
-                    if (!context.mounted) return;
+                    if (!bCtx.mounted) return;
                     Navigator.pop(bCtx);
                     _load();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(bCtx).showSnackBar(
                       const SnackBar(
                         content: Text('Grievance submitted successfully!'),
                         behavior: SnackBarBehavior.floating,
