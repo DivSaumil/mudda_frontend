@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mudda_frontend/features/issues/application/category_notifier.dart';
 import 'package:mudda_frontend/features/issues/application/issue_list_notifier.dart';
 import 'package:mudda_frontend/features/issues/presentation/widgets/issue_card.dart';
-import 'package:mudda_frontend/features/community/presentation/screens/community_hub_screen.dart';
+import 'package:mudda_frontend/features/community/presentation/screens/neighbourhood_portal_screen.dart';
 import 'package:mudda_frontend/shared/theme/app_colors.dart';
 
 class IssueFeedScreen extends ConsumerStatefulWidget {
@@ -294,7 +294,7 @@ class _IssueFeedScreenState extends ConsumerState<IssueFeedScreen> {
         ],
       ),
       // Neighborhood Context Tab
-      const CommunityHubScreen(),
+      const NeighbourhoodPortalScreen(),
     ],
   ),
 ),
