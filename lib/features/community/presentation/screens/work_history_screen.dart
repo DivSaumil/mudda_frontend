@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/hoa_models.dart';
 import '../../data/repositories/mock_hoa_repository.dart';
+import '../../../../../shared/theme/app_colors.dart';
 
 class WorkHistoryScreen extends StatefulWidget {
   const WorkHistoryScreen({super.key});
@@ -65,7 +66,7 @@ class _WorkHistoryScreenState extends State<WorkHistoryScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _load,
-        color: const Color(0xFF6366F1),
+        color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
             // ── Summary stats ──────────────────────────────────────────────
@@ -73,12 +74,17 @@ class _WorkHistoryScreenState extends State<WorkHistoryScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Row(children: [
-                  _stat('${_history.length}', 'Jobs\nCompleted', const Color(0xFF6366F1), isDark),
+                  _stat('${_history.length}', 'Jobs\nCompleted', AppColors.primary, isDark),
                   const SizedBox(width: 12),
-                  _stat(_inr.format(_totalSpend), 'Total\nSpent', const Color(0xFFEF4444), isDark),
+                  _stat(_inr.format(_totalSpend), 'Total\nSpent', AppColors.error, isDark),
                   const SizedBox(width: 12),
-                  _stat(_inr.format(_totalSpend / (_history.isEmpty ? 1 : _history.length)),
-                      'Avg. Cost\nper Job', const Color(0xFFF59E0B), isDark),
+                  _stat(
+                    _inr.format(
+                        _totalSpend / (_history.isEmpty ? 1 : _history.length)),
+                    'Avg. Cost\nper Job',
+                    AppColors.warning,
+                    isDark,
+                  ),
                 ]),
               ),
             ),
@@ -90,22 +96,32 @@ class _WorkHistoryScreenState extends State<WorkHistoryScreen> {
                 child: TextField(
                   onChanged: (v) => setState(() => _search = v),
                   style: GoogleFonts.plusJakartaSans(
-                      color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                      fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Search history...',
                     hintStyle: GoogleFonts.plusJakartaSans(
-                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
                     prefixIcon: Icon(Icons.search_rounded,
-                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 20),
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                        size: 20),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    fillColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: isDark ? AppColors.borderDark : AppColors.border)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: isDark ? AppColors.borderDark : AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: isDark ? AppColors.primaryDarkTheme : AppColors.primary,
+                            width: 1.5)),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
               ),
@@ -124,19 +140,21 @@ class _WorkHistoryScreenState extends State<WorkHistoryScreen> {
                     child: Row(children: [
                       Text(entry.key, style: GoogleFonts.plusJakartaSans(
                           fontSize: 13, fontWeight: FontWeight.w800,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary)),
                       const SizedBox(width: 8),
-                      Expanded(child: Divider(color: isDark
-                          ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+                      Expanded(child: Divider(
+                          color: isDark ? AppColors.borderDark : AppColors.border)),
                     ]),
                   ),
                 ),
-                // Items for this month
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                      child: _HistoryTile(order: entry.value[i], isDark: isDark, inrFormat: _inr),
+                      child: _HistoryTile(
+                          order: entry.value[i], isDark: isDark, inrFormat: _inr),
                     ),
                     childCount: entry.value.length,
                   ),
@@ -160,13 +178,17 @@ class _WorkHistoryScreenState extends State<WorkHistoryScreen> {
           border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(children: [
-          Text(value, style: GoogleFonts.plusJakartaSans(
-              fontSize: 16, fontWeight: FontWeight.w800, color: color),
-              textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(value,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: color),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 2),
-          Text(label, style: GoogleFonts.plusJakartaSans(
-              fontSize: 10, fontWeight: FontWeight.w600,
-              color: color.withValues(alpha: 0.75)),
+          Text(label,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: color.withValues(alpha: 0.75)),
               textAlign: TextAlign.center),
         ]),
       ),
@@ -179,7 +201,8 @@ class _HistoryTile extends StatelessWidget {
   final bool isDark;
   final NumberFormat inrFormat;
 
-  const _HistoryTile({required this.order, required this.isDark, required this.inrFormat});
+  const _HistoryTile(
+      {required this.order, required this.isDark, required this.inrFormat});
 
   @override
   Widget build(BuildContext context) {
@@ -192,50 +215,62 @@ class _HistoryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+            color: isDark ? AppColors.borderDark : AppColors.border),
         boxShadow: isDark
             ? null
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 6))],
+            : [BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20, offset: const Offset(0, 6))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+              color: AppColors.success.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(w.category.icon, color: const Color(0xFF22C55E), size: 18),
+            child: Icon(w.category.icon, color: AppColors.success, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(w.title, style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700, fontSize: 14,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A))),
+                Text(w.title,
+                    style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700, fontSize: 14,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
                 const SizedBox(height: 2),
                 Row(children: [
-                  Icon(Icons.check_circle_outline, size: 12, color: const Color(0xFF22C55E)),
+                  Icon(Icons.check_circle_outline, size: 12, color: AppColors.success),
                   const SizedBox(width: 4),
-                  Text(completedStr, style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                  Text(completedStr,
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary)),
                   if (w.assignedTo != null) ...[
                     const SizedBox(width: 8),
-                    Text('· ${w.assignedTo}', style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                    Text('· ${w.assignedTo}',
+                        style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary)),
                   ],
                 ]),
               ],
             ),
           ),
-          Text(inrFormat.format(cost), style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w800, fontSize: 14,
-              color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626))),
+          Text(inrFormat.format(cost),
+              style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800, fontSize: 14,
+                  color: isDark ? AppColors.accentDark : AppColors.error)),
         ],
       ),
     );

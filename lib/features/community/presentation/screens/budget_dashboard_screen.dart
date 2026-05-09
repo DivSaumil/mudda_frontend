@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/hoa_models.dart';
 import '../../data/repositories/mock_hoa_repository.dart';
+import '../../../../../shared/theme/app_colors.dart';
 
 class BudgetDashboardScreen extends StatefulWidget {
   const BudgetDashboardScreen({super.key});
@@ -42,10 +43,10 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
 
     final period = _current;
     final healthColor = period.overallUtilization > 1.0
-        ? const Color(0xFFEF4444)
+        ? AppColors.error
         : period.overallUtilization > 0.85
-            ? const Color(0xFFF59E0B)
-            : const Color(0xFF22C55E);
+            ? AppColors.warning
+            : AppColors.success;
     final healthLabel = period.overallUtilization > 1.0
         ? 'Over Budget'
         : period.overallUtilization > 0.85
@@ -56,7 +57,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _load,
-        color: const Color(0xFF6366F1),
+        color: AppColors.primary,
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 60),
           child: Column(
@@ -68,26 +69,35 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 child: Row(children: [
                   Text('Period:', style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w600, fontSize: 13,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
                   const SizedBox(width: 12),
                   ..._periods.asMap().entries.map((e) => GestureDetector(
-                    onTap: () => setState(() { _selectedPeriodIdx = e.key; _touchedIndex = -1; }),
+                    onTap: () => setState(() {
+                      _selectedPeriodIdx = e.key;
+                      _touchedIndex = -1;
+                    }),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                      duration: const Duration(milliseconds: 220),
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: e.key == _selectedPeriodIdx
-                            ? const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)])
-                            : null,
+                            ? AppColors.primaryGradient : null,
                         color: e.key == _selectedPeriodIdx
-                            ? null : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-                        borderRadius: BorderRadius.circular(20),
+                            ? null
+                            : (isDark ? AppColors.surfaceDark : AppColors.surface),
+                        borderRadius: BorderRadius.circular(24),
+                        border: e.key == _selectedPeriodIdx
+                            ? null
+                            : Border.all(
+                                color: isDark ? AppColors.borderDark : AppColors.border),
                       ),
                       child: Text(e.value.label, style: GoogleFonts.plusJakartaSans(
                           fontSize: 12, fontWeight: FontWeight.w600,
                           color: e.key == _selectedPeriodIdx
-                              ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)))),
+                              ? AppColors.textOnPrimary
+                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary))),
                     ),
                   )),
                 ]),
@@ -99,11 +109,16 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    ),
+                    gradient: isDark
+                        ? AppColors.headerGradientDark
+                        : AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.2),
+                        blurRadius: 20, offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,21 +133,24 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: healthColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: healthColor.withValues(alpha: 0.5)),
                             ),
                             child: Text(healthLabel, style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                                fontSize: 12, fontWeight: FontWeight.w700,
+                                color: Colors.white)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Text(_inr.format(period.totalSpentInr),
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white)),
+                              fontSize: 32, fontWeight: FontWeight.w800,
+                              color: AppColors.textOnPrimary)),
                       Text('spent of ${_inr.format(period.totalBudgetInr)}',
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.7))),
                       const SizedBox(height: 14),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -149,7 +167,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                             ? '${_inr.format(period.totalRemainingInr)} remaining'
                             : '${_inr.format(-period.totalRemainingInr)} over budget',
                         style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.8))),
                     ],
                   ),
                 ),
@@ -160,7 +179,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 child: Text('Allocation Breakdown', style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w800, fontSize: 15,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A))),
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
               ),
               SizedBox(
                 height: 240,
@@ -189,12 +208,15 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                         sections: _buildSections(period.categories),
                       ),
                     ),
-                    if (_touchedIndex >= 0 && _touchedIndex < period.categories.length)
+                    if (_touchedIndex >= 0 &&
+                        _touchedIndex < period.categories.length)
                       Column(mainAxisSize: MainAxisSize.min, children: [
                         Text(period.categories[_touchedIndex].name,
                             style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10, fontWeight: FontWeight.w600,
-                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary),
                             textAlign: TextAlign.center),
                         Text(_inr.format(period.categories[_touchedIndex].spentAmountInr),
                             style: GoogleFonts.plusJakartaSans(
@@ -203,14 +225,17 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                       ])
                     else
                       Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text('Total\nSpent', style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10, fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        Text('Total\nSpent',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10, fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary),
                             textAlign: TextAlign.center),
                         Text(_inr.format(period.totalSpentInr),
                             style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14, fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A))),
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
                       ]),
                   ],
                 ),
@@ -264,10 +289,15 @@ class _CategoryRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              color: isDark ? AppColors.borderDark : AppColors.border),
+          boxShadow: isDark
+              ? null
+              : [BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,22 +307,23 @@ class _CategoryRow extends StatelessWidget {
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: cat.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(cat.icon, color: cat.color, size: 16),
               ),
               const SizedBox(width: 10),
               Expanded(child: Text(cat.name, style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w700, fontSize: 13,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A)))),
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary))),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                 Text(inrFormat.format(cat.spentAmountInr),
                     style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w800, fontSize: 13,
-                        color: over ? const Color(0xFFEF4444) : cat.color)),
+                        color: over ? AppColors.error : cat.color)),
                 Text('of ${inrFormat.format(cat.allocatedAmountInr)}',
                     style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
+                        fontSize: 10,
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
               ]),
             ]),
             const SizedBox(height: 8),
@@ -301,8 +332,9 @@ class _CategoryRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: cat.utilizationPercent.clamp(0, 1),
                 minHeight: 6,
-                backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                color: over ? const Color(0xFFEF4444) : cat.color,
+                backgroundColor:
+                    isDark ? AppColors.borderDark : AppColors.shimmerBase,
+                color: over ? AppColors.error : cat.color,
               ),
             ),
             const SizedBox(height: 4),
@@ -312,8 +344,9 @@ class _CategoryRow extends StatelessWidget {
                   : '${_pct(cat.utilizationPercent)} used — ${inrFormat.format(cat.remainingAmountInr)} left',
               style: GoogleFonts.plusJakartaSans(
                   fontSize: 10,
-                  color: over ? const Color(0xFFEF4444) :
-                      (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                  color: over
+                      ? AppColors.error
+                      : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
             ),
           ],
         ),

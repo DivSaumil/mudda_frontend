@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../../shared/theme/app_colors.dart';
 import 'community_hub_screen.dart';
 import 'grievance_board_screen.dart';
 import 'work_order_board_screen.dart';
@@ -43,13 +44,12 @@ class _NeighbourhoodPortalScreenState extends State<NeighbourhoodPortalScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
 
     return Column(
       children: [
         // ── Custom scrollable pill tab bar ──────────────────────────────────
         Container(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          color: isDark ? AppColors.scaffoldBackgroundDark : AppColors.surface,
           child: Column(
             children: [
               SizedBox(
@@ -60,9 +60,7 @@ class _NeighbourhoodPortalScreenState extends State<NeighbourhoodPortalScreen>
                   tabAlignment: TabAlignment.start,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   indicator: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                    ),
+                    gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
@@ -76,10 +74,10 @@ class _NeighbourhoodPortalScreenState extends State<NeighbourhoodPortalScreen>
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
-                  labelColor: Colors.white,
+                  labelColor: AppColors.textOnPrimary,
                   unselectedLabelColor: isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF64748B),
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
                   tabs: _tabs.map((t) => _buildTab(t)).toList(),
                 ),
               ),
@@ -87,8 +85,8 @@ class _NeighbourhoodPortalScreenState extends State<NeighbourhoodPortalScreen>
                 height: 1,
                 thickness: 1,
                 color: isDark
-                    ? cs.outlineVariant.withValues(alpha: 0.3)
-                    : cs.outlineVariant.withValues(alpha: 0.5),
+                    ? AppColors.borderDark.withValues(alpha: 0.5)
+                    : AppColors.border.withValues(alpha: 0.7),
               ),
             ],
           ),

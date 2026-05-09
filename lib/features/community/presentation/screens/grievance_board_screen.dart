@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/hoa_models.dart';
 import '../../data/repositories/mock_hoa_repository.dart';
+import '../../../../../shared/theme/app_colors.dart';
 
 class GrievanceBoardScreen extends StatefulWidget {
   const GrievanceBoardScreen({super.key});
@@ -16,8 +17,6 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
   List<Grievance> _all = [];
   bool _loading = true;
   GrievanceCategory? _filterCategory;
-
-  static const _civicIndigo = Color(0xFF6366F1);
 
   @override
   void initState() {
@@ -50,7 +49,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _load,
-        color: _civicIndigo,
+        color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
             // ── Stats Strip ──────────────────────────────────────────────────
@@ -60,13 +59,13 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 child: Row(
                   children: [
                     _statChip('${_byStatus(GrievanceStatus.open).length}', 'Open',
-                        const Color(0xFFEF4444), isDark),
+                        AppColors.error, isDark),
                     const SizedBox(width: 8),
                     _statChip('${_byStatus(GrievanceStatus.inProgress).length}',
-                        'In Progress', const Color(0xFFF59E0B), isDark),
+                        'In Progress', AppColors.warning, isDark),
                     const SizedBox(width: 8),
                     _statChip('${_byStatus(GrievanceStatus.resolved).length}',
-                        'Resolved', const Color(0xFF22C55E), isDark),
+                        'Resolved', AppColors.success, isDark),
                   ],
                 ),
               ),
@@ -91,14 +90,14 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-            // ── Kanban columns (vertical stacked) ────────────────────────────
-            _sectionHeader('🔴  Open', const Color(0xFFEF4444), isDark),
+            // ── Kanban columns ───────────────────────────────────────────────
+            _sectionHeader('🔴  Open', AppColors.error, isDark),
             ..._kanbanCards(_byStatus(GrievanceStatus.open), isDark, cs),
 
-            _sectionHeader('🟡  In Progress', const Color(0xFFF59E0B), isDark),
+            _sectionHeader('🟡  In Progress', AppColors.warning, isDark),
             ..._kanbanCards(_byStatus(GrievanceStatus.inProgress), isDark, cs),
 
-            _sectionHeader('🟢  Resolved', const Color(0xFF22C55E), isDark),
+            _sectionHeader('🟢  Resolved', AppColors.success, isDark),
             ..._kanbanCards(_byStatus(GrievanceStatus.resolved), isDark, cs),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -106,8 +105,8 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _civicIndigo,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
         icon: const Icon(Icons.add_rounded),
         label: Text('Report Issue', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
         onPressed: () => _showSubmitSheet(context, isDark, cs),
@@ -115,7 +114,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
     );
   }
 
-  // ── Kanban cards ───────────────────────────────────────────────────────────
+  // ── Section header ─────────────────────────────────────────────────────────
 
   SliverToBoxAdapter _sectionHeader(String title, Color color, bool isDark) {
     return SliverToBoxAdapter(
@@ -125,7 +124,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
           children: [
             Text(title, style: GoogleFonts.plusJakartaSans(
               fontWeight: FontWeight.w800, fontSize: 14,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
             )),
             const SizedBox(width: 8),
             Container(width: 40, height: 2, color: color.withValues(alpha: 0.4)),
@@ -134,6 +133,8 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
       ),
     );
   }
+
+  // ── Kanban cards ───────────────────────────────────────────────────────────
 
   List<SliverToBoxAdapter> _kanbanCards(
       List<Grievance> items, bool isDark, ColorScheme cs) {
@@ -144,7 +145,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text('None',
                 style: GoogleFonts.plusJakartaSans(
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
                     fontSize: 13)),
           ),
         )
@@ -157,8 +158,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 child: _GrievanceCard(
                   grievance: g,
                   isDark: isDark,
-                  cs: cs,
-                  onTap: () => _showDetailSheet(context, g, isDark, cs),
+                  onTap: () => _showDetailSheet(context, g, isDark),
                 ),
               ),
             ))
@@ -172,15 +172,17 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
     return GestureDetector(
       onTap: () => setState(() => _filterCategory = cat),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          gradient: selected
-              ? const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)])
-              : null,
-          color: selected ? null : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(20),
+          gradient: selected ? AppColors.primaryGradient : null,
+          color: selected ? null : (isDark ? AppColors.surfaceDark : AppColors.surface),
+          borderRadius: BorderRadius.circular(24),
+          border: selected
+              ? null
+              : Border.all(
+                  color: isDark ? AppColors.borderDark : AppColors.border),
         ),
         child: Text(
           cat != null ? '${String.fromCharCode(cat.icon.codePoint)} $label' : label,
@@ -188,8 +190,8 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
-                ? Colors.white
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                ? AppColors.textOnPrimary
+                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
           ),
         ),
       ),
@@ -204,7 +206,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: color.withValues(alpha: isDark ? 0.15 : 0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
@@ -231,9 +233,9 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      backgroundColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (bCtx) => StatefulBuilder(
         builder: (bCtx, setSS) => Padding(
@@ -247,7 +249,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 child: Container(
                   width: 40, height: 4,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0),
+                    color: isDark ? AppColors.textHintDark : AppColors.textHint,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -255,38 +257,37 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
               const SizedBox(height: 16),
               Text('Report a Grievance', style: GoogleFonts.plusJakartaSans(
                 fontSize: 18, fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
               )),
               const SizedBox(height: 16),
               _sheetField(titleCtrl, 'Title', 'e.g. Water leak in corridor', isDark),
               const SizedBox(height: 10),
               _sheetField(descCtrl, 'Description', 'Describe the issue...', isDark, maxLines: 3),
               const SizedBox(height: 10),
-              // Category dropdown
               DropdownButtonFormField<GrievanceCategory>(
                 initialValue: selectedCat,
-                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                dropdownColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
                 decoration: _inputDecoration('Category', isDark),
                 items: GrievanceCategory.values
                     .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
                     .toList(),
                 onChanged: (v) => setSS(() => selectedCat = v!),
                 style: GoogleFonts.plusJakartaSans(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                   fontSize: 14,
                 ),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<GrievancePriority>(
                 initialValue: selectedPriority,
-                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                dropdownColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
                 decoration: _inputDecoration('Priority', isDark),
                 items: GrievancePriority.values
                     .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
                     .toList(),
                 onChanged: (v) => setSS(() => selectedPriority = v!),
                 style: GoogleFonts.plusJakartaSans(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -294,37 +295,44 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _civicIndigo,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  onPressed: () async {
-                    if (titleCtrl.text.trim().isEmpty) return;
-                    final g = Grievance(
-                      id: 'grv-${DateTime.now().millisecondsSinceEpoch}',
-                      title: titleCtrl.text.trim(),
-                      description: descCtrl.text.trim(),
-                      category: selectedCat,
-                      priority: selectedPriority,
-                      status: GrievanceStatus.open,
-                      submittedBy: 'You',
-                      submittedAt: DateTime.now(),
-                    );
-                    await _repo.submitGrievance(g);
-                    if (!bCtx.mounted) return;
-                    Navigator.pop(bCtx);
-                    _load();
-                    ScaffoldMessenger.of(bCtx).showSnackBar(
-                      const SnackBar(
-                        content: Text('Grievance submitted successfully!'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  child: Text('Submit Grievance', style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700, fontSize: 15)),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: AppColors.textOnPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () async {
+                      if (titleCtrl.text.trim().isEmpty) return;
+                      final g = Grievance(
+                        id: 'grv-${DateTime.now().millisecondsSinceEpoch}',
+                        title: titleCtrl.text.trim(),
+                        description: descCtrl.text.trim(),
+                        category: selectedCat,
+                        priority: selectedPriority,
+                        status: GrievanceStatus.open,
+                        submittedBy: 'You',
+                        submittedAt: DateTime.now(),
+                      );
+                      await _repo.submitGrievance(g);
+                      if (!bCtx.mounted) return;
+                      Navigator.pop(bCtx);
+                      _load();
+                      ScaffoldMessenger.of(bCtx).showSnackBar(
+                        const SnackBar(
+                          content: Text('Grievance submitted successfully!'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: Text('Submit Grievance', style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
                 ),
               ),
             ],
@@ -336,13 +344,13 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
 
   // ── Detail bottom sheet ────────────────────────────────────────────────────
 
-  void _showDetailSheet(BuildContext ctx, Grievance g, bool isDark, ColorScheme cs) {
+  void _showDetailSheet(BuildContext ctx, Grievance g, bool isDark) {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      backgroundColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) => DraggableScrollableSheet(
         expand: false,
@@ -358,7 +366,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 child: Container(
                   width: 40, height: 4,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0),
+                    color: isDark ? AppColors.textHintDark : AppColors.textHint,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -369,15 +377,15 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _civicIndigo.withValues(alpha: 0.12),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(g.category.icon, color: _civicIndigo, size: 22),
+                    child: Icon(g.category.icon, color: AppColors.primary, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(g.title, style: GoogleFonts.plusJakartaSans(
                     fontSize: 17, fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                   ))),
                 ],
               ),
@@ -386,25 +394,31 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 spacing: 8,
                 children: [
                   _badge(g.priority.label, g.priority.color, isDark),
-                  _badge(g.category.label, _civicIndigo, isDark),
-                  if (g.unitNo != null) _badge('Unit ${g.unitNo}', const Color(0xFF64748B), isDark),
+                  _badge(g.category.label, AppColors.primary, isDark),
+                  if (g.unitNo != null)
+                    _badge('Unit ${g.unitNo}', AppColors.textSecondary, isDark),
                 ],
               ),
               const SizedBox(height: 16),
-              Text('Submitted by ${g.submittedBy} · ${DateFormat('d MMM yyyy').format(g.submittedAt)}',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+              Text(
+                'Submitted by ${g.submittedBy} · ${DateFormat('d MMM yyyy').format(g.submittedAt)}',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+              ),
               const SizedBox(height: 12),
               Text(g.description, style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155))),
+                  fontSize: 14,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
               if (g.assignedTo != null) ...[
                 const SizedBox(height: 16),
                 Row(children: [
-                  Icon(Icons.person_outline, size: 16, color: _civicIndigo),
+                  Icon(Icons.person_outline, size: 16, color: AppColors.primary),
                   const SizedBox(width: 6),
                   Text('Assigned to: ${g.assignedTo}',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600,
-                          color: _civicIndigo)),
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.primaryDarkTheme : AppColors.primary)),
                 ]),
               ],
               if (g.resolutionNote != null) ...[
@@ -412,16 +426,19 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E).withValues(alpha: isDark ? 0.15 : 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                    color: AppColors.success.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Resolution Note', style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700, fontSize: 13, color: const Color(0xFF22C55E))),
+                        fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.success)),
                     const SizedBox(height: 4),
-                    Text(g.resolutionNote!, style: GoogleFonts.plusJakartaSans(fontSize: 13,
-                        color: isDark ? const Color(0xFFBBF7D0) : const Color(0xFF166534))),
+                    Text(g.resolutionNote!, style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.accentDark
+                            : const Color(0xFF166534))),
                   ]),
                 ),
               ],
@@ -437,7 +454,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
       color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       border: Border.all(color: color.withValues(alpha: 0.35)),
     ),
     child: Text(label, style: GoogleFonts.plusJakartaSans(
@@ -450,7 +467,7 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
       controller: ctrl,
       maxLines: maxLines,
       style: GoogleFonts.plusJakartaSans(
-          color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary, fontSize: 14),
       decoration: _inputDecoration(label, isDark).copyWith(hintText: hint),
     );
   }
@@ -458,15 +475,16 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
   InputDecoration _inputDecoration(String label, bool isDark) => InputDecoration(
     labelText: label,
     labelStyle: GoogleFonts.plusJakartaSans(
-        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 13),
+        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary, fontSize: 13),
     filled: true,
-    fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5)),
+    fillColor: isDark ? AppColors.scaffoldBackgroundDark : AppColors.scaffoldBackground,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.border)),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.border)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+            color: isDark ? AppColors.primaryDarkTheme : AppColors.primary, width: 1.5)),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
   );
 }
@@ -476,12 +494,10 @@ class _GrievanceBoardScreenState extends State<GrievanceBoardScreen> {
 class _GrievanceCard extends StatelessWidget {
   final Grievance grievance;
   final bool isDark;
-  final ColorScheme cs;
   final VoidCallback onTap;
 
   const _GrievanceCard({
-    required this.grievance, required this.isDark,
-    required this.cs, required this.onTap,
+    required this.grievance, required this.isDark, required this.onTap,
   });
 
   @override
@@ -495,13 +511,15 @@ class _GrievanceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              color: isDark ? AppColors.borderDark : AppColors.border),
           boxShadow: isDark
               ? null
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
+              : [BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 20, offset: const Offset(0, 6))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,10 +527,10 @@ class _GrievanceCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(g.category.icon, color: const Color(0xFF6366F1), size: 18),
+              child: Icon(g.category.icon, color: AppColors.primary, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -521,17 +539,20 @@ class _GrievanceCard extends StatelessWidget {
                 children: [
                   Text(g.title, style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w700, fontSize: 14,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                   ), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text(g.category.label, style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                        fontSize: 11,
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
                     const SizedBox(width: 6),
-                    Text('·', style: GoogleFonts.plusJakartaSans(color: const Color(0xFF94A3B8))),
+                    Text('·', style: GoogleFonts.plusJakartaSans(
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
                     const SizedBox(width: 6),
                     Text(ageStr, style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                        fontSize: 11,
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
                   ]),
                 ],
               ),
@@ -541,7 +562,7 @@ class _GrievanceCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: g.priority.color.withValues(alpha: isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Text(g.priority.label,
                 style: GoogleFonts.plusJakartaSans(
