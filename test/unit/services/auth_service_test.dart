@@ -26,7 +26,7 @@ void main() {
   // Base URL used in tests - must match AppConstants.baseUrl exactly
   // Note: The URL in constants ends with a trailing slash
   const testBaseUrl =
-      'http://Mudda-backend-env.eba-p7eppepp.ap-south-1.elasticbeanstalk.com';
+      'http://mudda-ai.ap-south-1.elasticbeanstalk.com';
 
   setUp(() {
     // Note: AuthService uses absolute URLs for auth endpoints, so baseUrl here
